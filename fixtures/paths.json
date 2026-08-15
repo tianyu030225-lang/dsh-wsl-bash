@@ -1,0 +1,28 @@
+{
+  "windowsToWsl": [
+    {
+      "windows": "C:\\Users\\Alice\\work\\dsh_bash\\目录 with spaces",
+      "wsl": "/mnt/c/Users/Alice/work/dsh_bash/目录 with spaces"
+    },
+    {
+      "windows": "D:\\工作区\\项目\\文件.txt",
+      "wsl": "/mnt/d/工作区/项目/文件.txt"
+    }
+  ],
+  "rejectAsWorkspaceRoot": [
+    "C:\\",
+    "C:\\Users",
+    "\\\\server\\share\\repo",
+    "\\\\?\\C:\\repo",
+    "\\\\.\\PIPE\\name",
+    "/",
+    "/mnt",
+    "/mnt/c"
+  ],
+  "rejectAsWorkdir": [
+    "..",
+    "../outside",
+    "C:\\other-repo",
+    "/tmp/outside"
+  ]
+}

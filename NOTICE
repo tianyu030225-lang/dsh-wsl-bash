@@ -1,0 +1,10 @@
+dsh-plugin-bash-wsl
+
+This product includes portions of the bounded terminal session state machine
+adapted from `@deepseek-ai/dsh-terminal-bash@0.1.0-rc.6`, Copyright (c) 2026
+DeepSeek, under the MIT License. The adapted portions are identified in
+`src/terminal/session.ts`; the WSL transport and plugin integration are separate
+code in this repository.
+
+The MIT license and copyright notices for the adapted portions are retained in
+`LICENSE`.

@@ -1,0 +1,13 @@
+# DSH Cordis patch override for the dsh-plugin-bash-wsl 0.1.0 bundle.
+# DSH peer/runtime compatibility is 0.1.0-rc.6. The package's own
+# cordis.patch.yml registers the bundle; this file only overrides real fields.
+- id: bash-wsl-native
+  config:
+    - id: bash-wsl-backend-and-tools
+      config:
+        distro: Ubuntu
+        shellPath: /bin/bash
+        shellArgs:
+          - --noprofile
+          - --norc
+          - -i

@@ -1,0 +1,11 @@
+# Copy the fields you need into your profile's cordis.patch.yml.
+# This example changes the distro while preserving the locked V1 defaults.
+- id: bash-wsl-native
+  config:
+    - id: bash-wsl-backend-and-tools
+      config:
+        distro: Ubuntu
+        shellArgs:
+          - --noprofile
+          - --norc
+          - -i

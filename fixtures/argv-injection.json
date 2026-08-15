@@ -1,0 +1,12 @@
+[
+  "printf '%s\\n' safe",
+  "printf '%s\\n' \"quoted value\"",
+  "printf '%s\\n' a; touch SHOULD_NOT_RUN",
+  "printf '%s\\n' $(touch SHOULD_NOT_RUN)",
+  "printf '%s\\n' `touch SHOULD_NOT_RUN`",
+  "printf '%s\\n' a\\nb; touch SHOULD_NOT_RUN",
+  "--help",
+  "-c touch SHOULD_NOT_RUN",
+  "$(id)",
+  "`id`"
+]
