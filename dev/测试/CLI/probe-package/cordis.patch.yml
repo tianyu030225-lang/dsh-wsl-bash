@@ -1,0 +1,4 @@
+- id: bash-wsl-native
+  insert:
+    - id: dsh-cli-probe
+      name: dsh-cli-probe

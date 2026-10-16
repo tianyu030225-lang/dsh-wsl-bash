@@ -1,0 +1,38 @@
+# Official DSH bundle layer for dsh-plugin-bash-wsl.
+# The original Windows PowerShell row is deliberately left enabled.
+- insert:
+    - id: bash-wsl-native
+      name: cordis:group
+      group: true
+      isolate:
+        terminals: true
+      config:
+        - id: bash-wsl-terminal-registry
+          name: '@deepseek-ai/dsh-terminal'
+
+        - id: bash-wsl-backend-and-tools
+          name: 'dsh-plugin-bash-wsl'
+          disabled: !!js process.platform !== 'win32'
+          config:
+            backendType: wsl
+            distro: Ubuntu
+            shellPath: /bin/bash
+            shellArgs:
+              - --noprofile
+              - --norc
+              - -i
+            timeoutMs: 300000
+
+        - id: bash-wsl-persistent-tool
+          name: 'dsh-plugin-bash-wsl/persistent'
+          disabled: !!js process.platform !== 'win32'
+          config:
+            backendType: wsl
+            timeoutMs: 300000
+            maxOutputChars: 16000
+            description: |-
+              Run commands in an owner-isolated persistent Bash shell inside Ubuntu WSL2.
+              State such as cwd, variables, functions, and background jobs persists across calls.
+              The standing sandbox mode is locked for the lifetime of the shell.
+              Calls by the same agent are serialized. Timeout, cancellation, or shell exit
+              resets the shell; the next call starts with a clean directory and environment.

@@ -1,0 +1,11 @@
+# Copy the fields you need into your profile's cordis.patch.yml.
+# Plugin 0.2.0: change the distro without changing the host permission policy.
+- id: bash-wsl-native
+  config:
+    - id: bash-wsl-backend-and-tools
+      config:
+        distro: Ubuntu
+        shellArgs:
+          - --noprofile
+          - --norc
+          - -i

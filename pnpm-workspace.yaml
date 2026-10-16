@@ -1,0 +1,13 @@
+packages:
+  - .
+
+# pnpm 11 fails closed on dependency build scripts. Only Vitest's JavaScript
+# bundler is required for this project; native and optional transitive scripts
+# from the DSH development fixture remain explicitly disabled.
+allowBuilds:
+  '@deepseek-ai/dsh-subprocess-local': false
+  '@google/genai': false
+  esbuild: true
+  koffi: false
+  node-pty: false
+  protobufjs: false

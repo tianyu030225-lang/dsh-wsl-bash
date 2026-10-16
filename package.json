@@ -1,0 +1,128 @@
+{
+  "name": "dsh-plugin-bash-wsl",
+  "version": "0.2.0",
+  "description": "Native Git Bash and sandboxed WSL execution backends for DeepSeek Harness on Windows",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tianyu030225-lang/dsh-wsl-bash.git"
+  },
+  "homepage": "https://github.com/tianyu030225-lang/dsh-wsl-bash#readme",
+  "bugs": {
+    "url": "https://github.com/tianyu030225-lang/dsh-wsl-bash/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "default": "./dist/config.js"
+    },
+    "./prompt": {
+      "types": "./dist/prompt.d.ts",
+      "default": "./dist/prompt.js"
+    },
+    "./persistent": {
+      "types": "./dist/tools/persistent.d.ts",
+      "default": "./dist/tools/persistent.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "dsh-bash-wsl": "./bin/dsh-bash-wsl.mjs"
+  },
+  "files": [
+    "bin/dsh-bash-wsl.mjs",
+    "dist",
+    "profiles",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh-CN.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke:integration": "node dev/测试/smoke/integration.mjs",
+    "smoke:security": "node dev/测试/smoke/security-probe.mjs",
+    "pack:check": "npm pack --dry-run",
+    "prepack": "pnpm run build"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "plugin",
+    "git-bash",
+    "wsl",
+    "wsl2",
+    "bubblewrap",
+    "terminal"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "4.0.4 || 4.0.5-alpha.1",
+    "@deepseek-ai/dsh": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-agent": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-agent-preset-registry": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-app-boot": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-sandbox": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-sandbox-policy": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-subprocess": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-subprocess-local": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-terminal": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-terminal-bash": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-tool-bash-persistent": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-user-approval": "0.2.0-rc.2 || 0.2.1-alpha.1",
+    "@deepseek-ai/dsh-win32-process": "0.2.0-rc.2 || 0.2.1-alpha.1"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "3.18.5-alpha.1"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "4.0.9",
+    "@deepseek-ai/cordis": "4.0.5-alpha.1",
+    "@deepseek-ai/dsh": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-agent": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-agent-preset-registry": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-app-boot": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-sandbox": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-sandbox-policy": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-subprocess": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-subprocess-local": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-system-prompt": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-terminal": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-terminal-bash": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-tool-bash-persistent": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-tools": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-user-approval": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-win32-process": "0.2.1-alpha.1",
+    "@types/node": "22.18.3",
+    "node-pty": "1.2.0-beta.15",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  },
+  "packageManager": "pnpm@11.21.0"
+}

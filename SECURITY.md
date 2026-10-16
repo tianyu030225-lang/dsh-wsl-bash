@@ -1,0 +1,85 @@
+# Security model
+
+This is the security contract for plugin `dsh-plugin-bash-wsl` `0.2.0`, supporting Desktop DSH `0.2.0-rc.2` and CLI `0.2.1-alpha.1` only. Old DSH `0.1.0-rc.6` remains on plugin `0.1.0`. It records deliberate limits and required fail-closed behavior. A test contradicting this contract blocks release; never weaken it to make an implementation pass.
+
+## Assets and trust boundaries
+
+The host DSH process, its loaded `sandboxPolicy`, approval service, `profileContext.installAnchor` and agent identity are trusted inputs. Model arguments, descriptions, `workdir`, command text, environment, path spelling and session IDs are untrusted. Activation reads the manifest at the host's installation anchor; a supported peer package near the plugin must not conceal an unsupported actual host. Missing anchors, invalid manifests or unsupported versions prevent registration. Preserve `pwsh`; do not modify DSH core, profiles or user ACLs.
+
+Restricted WSL takes its immutable workspace root from the host's `sandboxPolicy.workspaceRoot`; only `workspace-write` adds a writable bind for that root. Canonical containment must be checked after resolving Windows/WSL paths and reparse/symlink components. `/`, `/mnt`, `/mnt/c`, a drive root, UNC paths, device namespaces, and an unrelated directory are never valid workspace roots. A WSL model `workdir` is a cwd relative to or contained by that root; it is not a second root and must not alter mounts. Explicit `danger-full-access` does not confine writes to the workspace. Git Bash, which requires full access or an exact approved one-shot execution, may also use a validated local cwd outside the workspace; the cwd does not grant that permission.
+
+## Backend rules
+
+### Additional agent modes
+
+`bash-wsl` and `bash-git-bash` are additional Agent presets, not permission presets. They compose the actual supported host's shipped Standard capabilities plus a separately isolated terminal group. They must leave stock definitions, the selected default, PowerShell, host policy and approval services unchanged. Child compositions disable recursive registration. Runtime modules and preset files must resolve from the actual host anchor, not plugin-local peers. Standard user overrides are not automatically merged into these modes.
+
+Each live Agent retains its composition under the official registry contract. Removing a definition prevents new bindings but is not permission to forcibly rewrite a live Agent. Stop active sessions before uninstalling and restart the host; after owner/composition disposal, no plugin shell, tool or prompt contribution may remain. Tests must distinguish declaration removal from disposal of a retained composition and require complete cleanup after all owned leases are released.
+
+### WSL
+
+`bash` is a persistent WSL session. `wsl_bash` is one-shot WSL. The default distribution is Ubuntu and the default shell is clean. Every WSL mode uses `/usr/bin/bwrap` and `/usr/bin/script`; restricted modes use a read-only host view with a bind limited to the trusted workspace root, mask the `/run` Windows interop broker, and unset `WSL_INTEROP`/`WSLENV`. This prevents WSL Windows `.exe` interop such as `cmd.exe` in restricted modes. `danger-full-access` uses a full `/` bind inside the parent-tied bwrap process and intentionally retains host interop. Missing host services prevent execution; missing WSL dependencies fail the probe or shell startup before model commands execute. These checks may start managed discovery/probe processes. No fallback to unsandboxed WSL is allowed. This is a targeted Windows-interop boundary, not general IPC or service isolation; reachable local services and network paths remain outside the claim.
+
+### Doctor
+
+Standalone doctor uses defaults/environment overrides and module-resolution version discovery; it does not parse profile patches or prove the running Desktop/CLI version. Embedders may pass the real `installAnchor`; invalid discovery becomes a failed version check. Defaults are Ubuntu and `C:\Windows\System32\wsl.exe`, with `DSH_WSL_DISTRO`, `DSH_WSL_PATH` and `DSH_GIT_BASH_PATH` overrides. Workspace mapping defaults to cwd. Doctor is read-only and never changes host/profile state.
+
+The persistent session stores its effective mode at creation. A later request cannot upgrade or downgrade it in place. A wider approved operation is a new one-shot invocation with the exact command and cwd, followed by normal cleanup.
+
+### Git Bash
+
+In Git Bash mode, `bash` is persistent native Git for Windows. It uses the actual host's official `BashTerminalBackend` startup and public session factory with a canonical local `bash.exe` and fixed clean interactive arguments. The plugin's bounded session requires a complete native OSC prompt identity, a canonical decimal status in `0..255`, BEL termination and the later exact visible sentinel; ConPTY may repaint command output between the control event and visible text. State is reset for every operation, and marker-only or text-only output is insufficient. This fixed terminal marker is not an authentication mechanism and is separate from the broker's control channel. The actual host's `@xterm/headless` protocol replies are drained before readiness. A Windows shell PID is not a POSIX foreground-idleness fact, so promptless silence cannot complete a native send. Pending emulator input is capped at 1MiB, replies at 256 pending items and 4096 bytes per item; violations fail closed and terminate the owner tree. It requires standing `danger-full-access` from the owner session, checked before discovery and again immediately before spawn. Restricted calls start zero processes; no exact one-shot approval can authorize this shell. Mode selection never escalates permissions. ConPTY supplies terminal transport, not confinement; full-access native commands can affect files outside the workspace.
+
+The native PTY is allocated by a small Node-mode helper through the actual host's public `node-pty` API. Before allocating it, the helper joins its own non-inheritable kill-on-close Windows Job; the host's public local managed subprocess service owns the helper too. This groups ConPTY, its workers, Bash and background descendants without relying on the host terminal handle's early PID snapshot or a later PID-tree guess. Missing local-provider, runner, Job or native-PTY dependencies fail closed. A separate bounded inherited control channel carries startup, resize, interrupt and exit facts; terminal output cannot impersonate these packets. A retained process handle observes shell exit even with a continuing background writer. Cleanup awaits the managed process range. These Jobs provide lifetime ownership, not file, IPC or network isolation.
+
+Managed-child completion does not imply that its independent control pipe has drained. Natural exit retains a valid late shell-exit packet, waiting no longer than the configured disposal grace. Missing or malformed exit facts remain failures; the drain timer and owned listeners are removed on settlement.
+
+Native protocol input is batched with 256 KiB/128 KiB pause/resume watermarks. The 1 MiB hard bound includes both buffered and in-flight parser input. A send or foreground sample drains the input prefix already observed and its replies, not an unlimited future background stream. Readiness also requires the current prompt's input sequence to be parsed and all pending replies to be delivered; a prompt that arrived after an earlier drain snapshot cannot bypass that check. Closing or failing the session releases its pending barriers without permitting late command writes.
+
+Restricted native Git Bash is not supported in this release. In the current Windows/MSYS capability check the official ACL runner can confine Windows commands, but native Bash fails during initialization with `couldn't create signal pipe, Win32 error 5`. This failure must not be converted into an unconfined fallback or a claimed sandbox pass.
+
+`git_bash` discovery has deterministic priority and rejects UNC/device paths. It passes command data as argv/structured input; it does not build a PowerShell command string. Restricted mode performs policy and approval checks before process creation. A denial must be observable as zero child processes. Only the host's explicit `danger-full-access` or one exact approved retry may spawn. Missing guard/runner/policy fails closed.
+
+The plugin does not claim that Git Bash itself is a sandbox. Native Windows ACL/token enforcement, if supplied by the host, remains the host's responsibility. The plugin must not claim network isolation: WSL, Git Bash, and `pwsh` can reach the network when the host permits it.
+
+### Persistent session ownership
+
+Every persistent session has an owner agent and an immutable backend/mode. `list`, `read`, `send`, `signal`, and `close` enforce that owner. Agent A must not affect Agent B's session, even when it knows a session ID. The plugin's versioned adaptation preserves both supported official tool contracts: reset/close the owner's shell on deadline expiry or cancellation; the next invocation starts clean. Lower-level `startSend` interruption is not a model-tool retention guarantee. Creation failure, natural exit, explicit close, owner disposal and plugin unload remove registry entries, timers and buffers, and reap the process tree. One-shot timeout/cancellation separately terminates its managed tree.
+
+Completion requires an actual current-command nonce-bearing END frame with a numeric Bash exit status and newline. The adapted tool checks the public operation's incremental output as well as retained scrollback; background output cannot turn an already observed completion frame into a timeout merely by evicting it from the newest page. Deadline and cancellation checks precede completion acceptance. Its fallback accumulator is capped at 256 KiB, preserves UTF-8 boundaries and explicitly marks lost prefixes; it never fabricates an exit code from silence. The actual host supplies deadline/output services through its installation anchor; missing services fail activation, with no plugin-local substitute.
+
+The current managed pipe seam does not expose a process ID or Linux foreground-group inspector. The WSL backend omits unavailable PID metadata and rejects explicit registry foreground signals without a verified target group. It never substitutes a Windows PID for a Linux process-group ID. Control-byte interruption for a pending operation and managed owner-shell close/reset remain available; this is not a general terminal foreground-signal API.
+
+### System instructions
+
+The plugin contributes one static section through the host's official `systemPrompt` service with template interpolation disabled. Each additional mode supplies the correct WSL/Git guidance in its own scope, shadowing rather than duplicating the global section. Registration is scoped to the owning plugin/composition lifetime and must disappear when that scope unloads. The section is usage guidance, not permission: user instructions, tool availability and host policy still apply. It must not contain personal account data, private paths or user credentials, and must not overwrite `AGENTS.md` or stock presets.
+
+## Required fail-closed invariants
+
+- Invalid config, unsupported DSH version, or missing required service prevents plugin activation.
+- Model `workdir` never chooses the writable root.
+- Empty/relative/space-containing/Chinese paths are handled as path values, not shell fragments.
+- `command` is intentionally a Bash program, so Bash syntax such as quotes, newlines, `$()`, backticks, semicolons, and globs executes according to Bash. `command`, `workdir`, `description`, and related approval/path fields remain in their defined argv/parameter slots and cannot inject an outer PowerShell wrapper or extra `wsl.exe`/`bwrap` options.
+- One-shot output is bounded at 64 MiB per captured stream (or a lower configured cap); truncation is explicit and never silently disables the cap. Persistent terminals use their configured bounded scrollback (4 MiB by default), a 256 KiB fallback accumulator, and a separate rendering limit (16,000 characters by default).
+- Model-facing persistent `bash` timeout/cancellation resets and reaps the owner shell; the next call starts a clean shell. One-shot timeout/cancellation kills the complete managed process tree and settles exactly once. Any lower-level `startSend` signal/settlement behavior is an internal backend detail, not a session-retention guarantee.
+- Approval rejection, unavailable approval, stale mode, or inexact retry executes zero processes.
+- A missing WSL sandbox dependency never downgrades to unrestricted execution.  
+- Persistent Git Bash never uses a one-shot escalation result, and a restricted or stale-policy spawn is refused before starting its process. Native PTY teardown must await the official terminate/quiescence contract, not merely the top process's exit.
+- Restricted WSL modes mask the `/run` interop broker and unset `WSL_INTEROP`/`WSLENV`; a real Windows/WSL regression that attempts to create a marker outside the policy workspace through `cmd.exe` must leave that marker absent. `danger-full-access` is an explicit exception. This assertion is not a claim of general IPC or network isolation.
+- Doctor is read-only and never installs or changes host state.
+
+## Threat model and non-goals
+
+The plugin protects the host workspace boundary, agent session ownership, command/argv separation, targeted restricted-mode Windows interop, and process cleanup. It does not protect against a user who intentionally grants `danger-full-access`, a compromised host/kernel, a malicious DSH host, or data exfiltration over an allowed network. General IPC isolation and service-mediated writes are explicitly out of scope: reachable local or network services may still perform writes when the host permits them. Network isolation is explicitly out of scope. It does not provide a Web UI, remote execution service, npm publishing, or an installer that patches a DSH installation.
+
+This baseline is self-contained. Its release-blocking regressions cover four boundaries: model `workdir` must not enlarge the immutable WSL writable bind; missing sandbox services must not silently become full access; restricted WSL Windows interop must not create an outside-workspace marker; and persistent sessions must remain isolated by agent owner. Additional modes also require separate scoped activation, correct mode-specific prompts, preserved stock capabilities and native-Git zero-process refusal without standing full access. The documentation explicitly discloses that WSL does not provide general IPC or network isolation and ConPTY does not sandbox Git Bash.
+
+## Reporting and release gate
+
+For a suspected boundary bypass, use [GitHub private vulnerability reporting](https://github.com/tianyu030225-lang/dsh-wsl-bash/security/advisories/new) if that option is enabled for this repository. If it is unavailable, [open an issue requesting a private reporting channel](https://github.com/tianyu030225-lang/dsh-wsl-bash/issues/new) without vulnerability details, reproduction commands, logs or secrets; wait for the maintainer to provide a private channel. In the private report, include a minimal reproduction, host/DSH versions, backend, effective mode, and whether a child process was created. Do not publish exploit details before remediation or post credentials in either channel.
+
+Before a release candidate, run the source-tree gate and retain separate CLI and actual Desktop runtime reports. Required evidence includes typecheck/tests, clean build, local tarball install into isolated profiles, configuration/load checks, actual registered-tool execution through official host services, prompt registration/removal, process cleanup and archive inspection. New validation code and reusable fixtures live under `dev/测试`; temporary data stays under `测试/运行产物`. Upstream snapshots/run artifacts stay outside Git and the tarball. Do not install into real user profiles or call paid models without separate explicit authorization. The tarball excludes `bin/*.ts`, `scripts/`, `docs/`, `dev/`, `测试/` and `src/`. A missing capability is SKIP, never PASS; a required host/security skip blocks full release qualification.
+
+## Attribution
+
+This package is MIT-licensed. Version `0.2.0` uses the public plugin seams of DSH Desktop `0.2.0-rc.2` and CLI `0.2.1-alpha.1`. The terminal state machine originally adapted from `0.1.0-rc.6` retains its attribution in `src/terminal/session.ts` and `NOTICE`; that attribution is not an old-host compatibility declaration. Any copied or adapted code from DSH or third-party audited projects must keep the source license/copyright notice and identify the source and version here or beside the adaptation. No security guarantee from a referenced project is being imported by reference.

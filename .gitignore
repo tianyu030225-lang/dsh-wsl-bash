@@ -1,0 +1,67 @@
+node_modules/
+测试/desktop-upstream-*/
+测试/运行产物/
+dist/
+coverage/
+*.tgz
+.DS_Store
+
+.dsh-final-sandbox.*/
+
+# Locally built packages; never substitute an old same-named root tarball.
+/.packages/
+
+# Local credentials and environment files are not project source.
+.env
+.env.*
+!.env.example
+.npmrc
+.npmrc.*
+!.npmrc.example
+
+# Machine-specific handoff notes and accidental terminal captures.
+/docs/maintenance-handoff.md
+/docs/plugin-dev-handoff.md
+/docs/plugin-dev-notes.md
+/任务暂停-*.md
+/et +e
+/tatus --short
+
+# Local diagnostic prototypes and real-profile evidence helpers.
+# Keep the tracked, portable regression suites in dev/测试/ public.
+/测试/CLI/focused-cancel-diagnostic.mjs
+/测试/CLI/focused-cancel-probe-package/
+/测试/CLI/git-direct-job-capability.mjs
+/测试/CLI/git-pty-job-capability.mjs
+/测试/CLI/git-pty-probe-package/
+/测试/CLI/git-pty-prompt-capability.mjs
+/测试/CLI/git-pty-prompt-probe-package/
+/测试/CLI/real-installed-git-supervisor.mjs
+/测试/CLI/real-web-install-smoke.mjs
+/测试/git-job-broker/
+/测试/snapshot-desktop.cjs
+/测试/桌面/assemble-gui-final-evidence-20261016.mjs
+/测试/桌面/assemble-gui-roster-20261016.mjs
+/测试/桌面/assemble-gui-stage2-evidence-20261016.mjs
+/测试/桌面/real-desktop-install-smoke.mjs
+/测试/桌面/release-check-recorder-20261016.mjs
+
+# Development sources moved; historical private artifacts remain at the old root.
+/dev/测试/运行产物/
+/dev/测试/desktop-upstream-*/
+/dev/测试/CLI/focused-cancel-diagnostic.mjs
+/dev/测试/CLI/focused-cancel-probe-package/
+/dev/测试/CLI/git-direct-job-capability.mjs
+/dev/测试/CLI/git-pty-job-capability.mjs
+/dev/测试/CLI/git-pty-probe-package/
+/dev/测试/CLI/git-pty-prompt-capability.mjs
+/dev/测试/CLI/git-pty-prompt-probe-package/
+/dev/测试/CLI/real-installed-git-supervisor.mjs
+/dev/测试/CLI/real-web-install-smoke.mjs
+/dev/测试/git-job-broker/
+/dev/测试/snapshot-desktop.cjs
+/dev/测试/桌面/assemble-gui-final-evidence-20261016.mjs
+/dev/测试/桌面/assemble-gui-roster-20261016.mjs
+/dev/测试/桌面/assemble-gui-stage2-evidence-20261016.mjs
+/dev/测试/桌面/real-desktop-install-smoke.mjs
+/dev/测试/桌面/release-check-recorder-20261016.mjs

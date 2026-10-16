@@ -1,0 +1,15 @@
+{
+  "name": "dsh-cli-probe",
+  "version": "0.0.0-test",
+  "private": true,
+  "type": "module",
+  "main": "./index.mjs",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "dsh-plugin-bash-wsl": "0.2.0"
+  }
+}

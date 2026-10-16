@@ -1,0 +1,35 @@
+dsh-plugin-bash-wsl
+
+This product includes portions of the bounded terminal session state machine
+adapted from `@deepseek-ai/dsh-terminal-bash@0.1.0-rc.6`, Copyright (c) 2026
+DeepSeek, under the MIT License. The adapted portions are identified in
+`src/terminal/session.ts`; the WSL transport and plugin integration are separate
+code in this repository.
+
+The MIT license and copyright notices for the adapted portions are retained in
+`LICENSE`.
+
+For the two supported 0.2 hosts, native Git Bash uses the installed official
+`@deepseek-ai/dsh-terminal-bash` public backend and startup/session factory.
+Its session reuses the bounded state machine in src/terminal/session.ts, with
+terminal-protocol reply/drain handling adapted from that component's MIT-licensed
+0.2.0-rc.2 / 0.2.1-alpha.1 implementation, Copyright (c) 2026 DeepSeek. The
+actual host's separately installed `@xterm/headless` emulator supplies protocol
+replies; it is not bundled here. Additional modes
+compose the installed `@deepseek-ai/dsh-web-app` Standard preset through the
+official preset registry. These upstream packages remain separately MIT-licensed
+DeepSeek components; this package does not vendor their runtime or preset files.
+
+The native Git Bash transport uses the installed public
+`@deepseek-ai/dsh-subprocess-local`, `@deepseek-ai/dsh-win32-process` and
+`node-pty` interfaces. The helper and its bounded control protocol are plugin
+code, not modifications to the host's private terminal implementation. The separately
+installed native libraries and their license notices are not bundled here.
+
+The persistent tool in src/tools/persistent.ts is adapted from the MIT-licensed
+DeepSeek dsh-tool-bash-persistent component, Copyright (c) 2026 DeepSeek. The
+supported Desktop 0.2.0-rc.2 and CLI 0.2.1-alpha.1 both ship the same 16041-byte
+implementation (SHA-256 2cc6627cc2e02ab65960e124f8c249045024fffe2563ab3507f7fbed9872acdc).
+This adaptation additionally recognizes actual incremental completion frames
+and bounds its fallback buffer. It does not modify the installed host files.
+The upstream MIT copyright and license notice is retained in LICENSE.
