@@ -57,7 +57,7 @@ async function main() {
     const plugin = readInstalledManifest(context, "dsh-plugin-bash-wsl");
     const probe = readInstalledManifest(context, "dsh-cli-probe");
     report.checks.push(plugin?.version === EXPECTED_PLUGIN_VERSION
-      ? check("CLI-SETUP-01", "PASS", "isolated profile contains dsh-plugin-bash-wsl@0.2.0", { version: plugin.version })
+      ? check("CLI-SETUP-01", "PASS", "isolated profile contains dsh-plugin-bash-wsl@0.2.1", { version: plugin.version })
       : check("CLI-SETUP-01", "FAIL", "isolated profile did not contain the expected plugin version", { version: plugin?.version ?? null }));
     report.checks.push(probe?.version === "0.0.0-test"
       ? check("CLI-SETUP-02", "PASS", "isolated profile contains the CLI probe bundle", { version: probe.version })

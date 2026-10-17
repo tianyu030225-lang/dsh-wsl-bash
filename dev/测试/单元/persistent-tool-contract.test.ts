@@ -170,6 +170,9 @@ function makeToolFixture(mode: FixtureMode) {
   });
   const ctx = {
     profileContext: { installAnchor: HOST_ANCHOR },
+    workingDirectory: {
+      ensure: vi.fn(async () => owner.session.header.cwd),
+    },
     effect: contextEffect,
     tools: {
       register: vi.fn((definition: RegisteredTool) => {

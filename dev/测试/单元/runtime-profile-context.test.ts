@@ -33,6 +33,7 @@ function activationContext(anchor: string) {
       getSectionOrder: vi.fn(() => 1000),
       section: vi.fn(() => vi.fn()),
     },
+    workingDirectory: { ensure: vi.fn() },
   } as any;
 }
 
@@ -70,7 +71,7 @@ describe("0.2 host compatibility and profileContext anchor", () => {
     const anchor = hostManifest("0.2.0-rc.99");
     const ctx = activationContext(anchor);
 
-    expect(() => apply(ctx)).toThrow(/supports DSH .*0\.2\.0-rc\.2.*0\.2\.1-alpha\.1.*detected 0\.2\.0-rc\.99/);
+    expect(() => apply(ctx)).toThrow(/supports DSH 0\.2\.1-rc\.2 only.*detected 0\.2\.0-rc\.99/);
     expect(ctx.terminals.registerBackend).not.toHaveBeenCalled();
     expect(ctx.tools.register).not.toHaveBeenCalled();
     expect(ctx.systemPrompt.section).not.toHaveBeenCalled();
@@ -108,8 +109,8 @@ describe("0.2 host compatibility and profileContext anchor", () => {
     expect(ctx.tools.register).not.toHaveBeenCalled();
   });
 
-  it("keeps the deprecated singular export tied to the alpha1 contract", () => {
-    expect(SUPPORTED_DSH_VERSION).toBe("0.2.1-alpha.1");
-    expect(SUPPORTED_DSH_VERSIONS).toEqual(["0.2.0-rc.2", "0.2.1-alpha.1"]);
+  it("keeps the deprecated singular export tied to the current exact contract", () => {
+    expect(SUPPORTED_DSH_VERSION).toBe("0.2.1-rc.2");
+    expect(SUPPORTED_DSH_VERSIONS).toEqual(["0.2.1-rc.2"]);
   });
 });

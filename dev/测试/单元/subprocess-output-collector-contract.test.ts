@@ -7,7 +7,7 @@ import type { SubprocessRuntime } from "@deepseek-ai/dsh-subprocess";
 
 import { runSubprocessForeground } from "../../../src/tools/process.js";
 
-const ALPHA_VERSION = "0.2.1-alpha.1";
+const HOST_VERSION = "0.2.1-rc.2";
 
 type OutputCollectorLike = {
   push(chunk: Buffer): void;
@@ -19,10 +19,10 @@ type OutputCollectorLike = {
   };
 };
 
-async function loadCurrentAlphaOutputCollector(): Promise<
+async function loadCurrentHostOutputCollector(): Promise<
   new (maxBytes: number, label: string, spill?: unknown) => OutputCollectorLike
 > {
-  // Resolve through the installed alpha host anchor and its package graph. Do
+  // Resolve through the installed rc.2 host anchor and its package graph. Do
   // not pick the first similarly named .pnpm directory: the tree also carries
   // a second dsh-subprocess peer instance without the local collector.
   const installAnchor = realpathSync(join(
@@ -39,7 +39,7 @@ async function loadCurrentAlphaOutputCollector(): Promise<
     };
   const hostManifest = readManifest(installAnchor);
   if (hostManifest.name !== "@deepseek-ai/dsh" ||
-    hostManifest.version !== ALPHA_VERSION) {
+    hostManifest.version !== HOST_VERSION) {
     throw new Error(
       `unexpected DSH install anchor: ${hostManifest.name}@${hostManifest.version}`,
     );
@@ -50,7 +50,7 @@ async function loadCurrentAlphaOutputCollector(): Promise<
   );
   const baseManifest = readManifest(baseAnchor);
   if (baseManifest.name !== "@deepseek-ai/dsh-base" ||
-    baseManifest.version !== ALPHA_VERSION) {
+    baseManifest.version !== HOST_VERSION) {
     throw new Error(
       `unexpected DSH base package: ${baseManifest.name}@${baseManifest.version}`,
     );
@@ -61,7 +61,7 @@ async function loadCurrentAlphaOutputCollector(): Promise<
   );
   const subprocessManifest = readManifest(subprocessAnchor);
   if (subprocessManifest.name !== "@deepseek-ai/dsh-subprocess" ||
-    subprocessManifest.version !== ALPHA_VERSION) {
+    subprocessManifest.version !== HOST_VERSION) {
     throw new Error(
       `unexpected subprocess package: ${subprocessManifest.name}@${subprocessManifest.version}`,
     );
@@ -71,7 +71,7 @@ async function loadCurrentAlphaOutputCollector(): Promise<
   );
   const localManifest = readManifest(localAnchor);
   if (localManifest.name !== "@deepseek-ai/dsh-subprocess-local" ||
-    localManifest.version !== ALPHA_VERSION) {
+    localManifest.version !== HOST_VERSION) {
     throw new Error(
       `unexpected local subprocess package: ${localManifest.name}@${localManifest.version}`,
     );
@@ -94,7 +94,7 @@ async function runWithCollectedOutput(options: {
   stdout: readonly Buffer[];
   stderr: readonly Buffer[];
 }): Promise<Awaited<ReturnType<typeof runSubprocessForeground>>> {
-  const OutputCollector = await loadCurrentAlphaOutputCollector();
+  const OutputCollector = await loadCurrentHostOutputCollector();
   const stdout = new OutputCollector(options.memoryLimit, "stdout");
   const stderr = new OutputCollector(options.memoryLimit, "stderr");
   for (const chunk of options.stdout) stdout.push(chunk);

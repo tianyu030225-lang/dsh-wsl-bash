@@ -118,6 +118,7 @@ function makeToolFixture(mode: FixtureMode) {
   let heldCancelReleased = false;
   let heldCancelListenerActive = false;
   let registered: RegisteredTool | undefined;
+  const workingDirectoryEnsure = vi.fn(async (owner: Owner) => owner.session.header.cwd);
 
   const makeOwner = (name: string): Owner => {
     const cleanups: Array<() => unknown> = [];
@@ -384,6 +385,7 @@ function makeToolFixture(mode: FixtureMode) {
       }),
     },
     terminals: { spawn, startSend, list, read, kill },
+    workingDirectory: { ensure: workingDirectoryEnsure },
   };
 
   return {
@@ -399,6 +401,7 @@ function makeToolFixture(mode: FixtureMode) {
     sessions,
     commandStarts,
     ownerMaxInFlight,
+    workingDirectoryEnsure,
     pluginCleanups,
     firstCommandStarted,
     cancelOperation,
@@ -451,6 +454,14 @@ describe("persistent tool public lifecycle contract", () => {
     expect(result).toContain("output-owner-a");
     expect(result).toContain("[Command finished with exit code 0]");
     expect(performance.now() - startedAt).toBeLessThan(CONFIG.timeoutMs);
+    expect(fixture.workingDirectoryEnsure).toHaveBeenCalledWith(
+      fixture.ownerA,
+      expect.any(AbortSignal),
+    );
+    expect(fixture.spawn.mock.calls[0]?.[1]).toEqual({
+      type: "wsl",
+      cwd: "C:\\fixture",
+    });
     expect(fixture.startSend).toHaveBeenCalledTimes(3);
     expect(fixture.commandStarts[0]?.text).toMatch(/__DSH_PERSISTENT_BASH_START_[0-9a-f-]+__/u);
     expect(fixture.commandStarts[1]?.text).toBe("");

@@ -6,7 +6,7 @@ import {
 } from "../../../src/runtime.js";
 
 describe("DSH runtime compatibility", () => {
-  it("accepts both exact host contracts", () => {
+  it("accepts the exact current host contract", () => {
     for (const version of SUPPORTED_DSH_VERSIONS) {
       expect(() => assertSupportedDshVersion(version)).not.toThrow();
     }
@@ -15,7 +15,7 @@ describe("DSH runtime compatibility", () => {
   it("fails closed for legacy and unknown host versions", () => {
     for (const version of ["0.1.0-rc.6", "0.1.0-rc.5", "unknown"]) {
       expect(() => assertSupportedDshVersion(version)).toThrow(
-        "supports DSH 0.2.0-rc.2 or 0.2.1-alpha.1 only",
+        "supports DSH 0.2.1-rc.2 only",
       );
     }
   });

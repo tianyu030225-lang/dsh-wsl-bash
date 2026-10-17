@@ -1,5 +1,6 @@
 import type { Context } from "@deepseek-ai/cordis";
 import type {} from "@deepseek-ai/dsh-app-boot";
+import type {} from "@deepseek-ai/dsh-working-directory";
 
 import { Config, resolveConfig } from "./config.js";
 import type { PluginConfig } from "./types.js";
@@ -45,6 +46,7 @@ export const inject = [
   "sessionProjections",
   "profileContext",
   "systemPrompt",
+  "workingDirectory",
 ] as const;
 
 export function apply(ctx: Context, config: PluginConfig = {}): void {

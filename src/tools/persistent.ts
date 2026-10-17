@@ -12,6 +12,7 @@ import type { Context } from "@deepseek-ai/cordis";
 import z from "@deepseek-ai/schemastery";
 import { defineTool, type ToolRunContext } from "@deepseek-ai/dsh-tools";
 import type {} from "@deepseek-ai/dsh-terminal";
+import type {} from "@deepseek-ai/dsh-working-directory";
 import { createDshHostRequire } from "../runtime.js";
 
 type Owner = NonNullable<ToolRunContext["agent"]>;
@@ -100,7 +101,7 @@ function partialOutput(snapshot: Snapshot, marker: Markers, fallback: Snapshot):
 }
 
 export const name = "bash-wsl-persistent-tool";
-export const inject = ["tools", "terminals", "profileContext"] as const;
+export const inject = ["tools", "terminals", "profileContext", "workingDirectory"] as const;
 export const Config = z.object({
   backendType: z.string().default("wsl"),
   timeoutMs: z.number().default(300_000),
@@ -177,8 +178,8 @@ export async function apply(ctx: Context, config: Partial<PersistentConfig> = {}
     const combinedSignal = AbortSignal.any([signal, lifecycle.signal]);
     const tracked = (async () => {
       try {
-        const cwd = owner.session.header.cwd;
-        const spawned = await ctx.terminals.spawn(owner, { type: resolved.backendType, ...(cwd === undefined ? {} : { cwd }) }, combinedSignal);
+        const cwd = await ctx.workingDirectory.ensure(owner, combinedSignal);
+        const spawned = await ctx.terminals.spawn(owner, { type: resolved.backendType, cwd }, combinedSignal);
         live.set(owner, spawned.sessionId);
         if (!ownerCleanup.has(owner)) {
           ownerCleanup.add(owner);

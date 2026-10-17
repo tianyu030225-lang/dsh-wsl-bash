@@ -158,7 +158,7 @@ function writeModule(root, packageName, source, fileName = "index.cjs") {
   mkdirSync(packageRoot, { recursive: true });
   writeFileSync(join(packageRoot, "package.json"), JSON.stringify({
     name: packageName,
-    version: "0.2.1-alpha.1",
+    version: "0.2.1-rc.2",
     main: fileName,
   }), "utf8");
   writeFileSync(join(packageRoot, fileName), source, "utf8");
@@ -171,7 +171,7 @@ function makeFixture({ fault, controlFault, missingControl = false, missingNodeP
   const anchor = join(hostRoot, "package.json");
   writeFileSync(anchor, JSON.stringify({
     name: "@deepseek-ai/dsh",
-    version: "0.2.1-alpha.1",
+    version: "0.2.1-rc.2",
   }), "utf8");
   writeModule(root, "@deepseek-ai/dsh-subprocess", SUBPROCESS_MODULE);
   const controlRoot = join(hostRoot, "node_modules", "@deepseek-ai", "dsh-subprocess");

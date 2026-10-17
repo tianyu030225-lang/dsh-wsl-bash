@@ -1,11 +1,11 @@
 # Local release checklist
 
-This is a pre-release checklist only. It must not publish to npm, push to Git, or alter a user DSH installation. Its package install is limited to the local tarball in a fresh temporary profile and uses `npm --offline`; it does not resolve packages from the registry.
+This is a pre-release checklist only. It must not publish to npm, push to Git, or alter a user DSH installation. Its package install is limited to the local tarball in a fresh temporary profile. CLI checks use the existing offline cache. The current Desktop runtime uses its bundled pnpm with a test-owned store/cache and may resolve the plugin's exact regular dependency from the registry; it never uses `legacy-peer-deps`, never installs peers into the host, and removes the temporary profile afterward.
 
 ## Before packaging
 
-- [ ] Confirm package name `dsh-plugin-bash-wsl` and exact plugin version `0.2.0`; retain `v0.1.0` for old DSH.
-- [ ] Confirm Node `>=22` and exact compatibility with Desktop `0.2.0-rc.2` and CLI `0.2.1-alpha.1`.
+- [ ] Confirm package name `dsh-plugin-bash-wsl` and exact plugin version `0.2.1`; retain `v0.2.0` and `v0.1.0` unchanged.
+- [ ] Confirm Node `>=22` and exact compatibility with Desktop and CLI `0.2.1-rc.2`.
 - [ ] Confirm activation reads the actual host installation anchor rather than the plugin's nearby dependencies.
 - [ ] Confirm system-prompt registration, non-interpolation and removal/reload behavior.
 - [ ] Confirm existing `pwsh` registration is preserved.
@@ -19,9 +19,13 @@ This is a pre-release checklist only. It must not publish to npm, push to Git, o
 - [ ] From the source checkout, `npm run typecheck` succeeds.
 - [ ] From the source checkout, `npm test` succeeds; conditional Windows/WSL tests clearly report skips with reasons.
 - [ ] Run the security matrix in `docs/testing.md`, including denied Git Bash zero-process and missing-bwrap fail-closed cases.
+- [ ] Verify every WSL Bash launch clears startup-control variables before Bash, establishes trusted `SHELL=/bin/bash`, and cannot create an outside marker through `BASH_ENV`; restricted interop remains disabled while explicit full access retains its documented behavior.
+- [ ] Verify the selected distribution's real `wslpath`/`realpath` mapping, Windows-shaped `wsl.exe --cd`, non-default automount contract, Unicode distribution output under `WSL_UTF8=1`, and clean-Bash `script` doctor probe.
+- [ ] Verify persistent TAB/ESC/DEL fidelity, NUL refusal, capture-gap incompleteness, current-prompt protocol barriers, asynchronous stdin failure cleanup, structured one-shot failure rendering, and merged WSL PTY denial diagnostics.
 - [ ] On a real Windows+WSL host, run the restricted Windows-outside marker regression from `docs/testing.md`: the `cmd.exe` interop attempt must leave no marker outside the immutable policy workspace. Record a concrete missing capability as a skip; `danger-full-access` is not a pass for this restricted gate. This regression does not claim general IPC or network isolation.
 - [ ] Run `npm run build`; it must clear only this checkout's `dist/` before `tsc`, and the release gate's stale sentinel must stay absent.
-- [ ] In a temporary profile directory, install the local package tarball with `npm --offline`; cleanup must remove only that temporary profile and verify the user profile was untouched.
+- [ ] In a temporary profile directory, install the local package tarball without `legacy-peer-deps`. Keep CLI offline when its cache is complete; for Desktop `0.2.1-rc.2`, use the bundled pnpm with a test-owned store/cache and record any exact registry resolution. Cleanup must remove only that temporary profile and verify the user profile was untouched.
+- [ ] Treat `file:`/hoisted installs as deployed copies or hardlinks: after every clean rebuild, reinstall the exact TGZ, confirm the runtime `installAnchor`, and compare installed/source `dist` hashes. A `link:` install cannot qualify a release.
 - [ ] Independently require the `D-14 old-version runtime rejection` item to PASS: run the preserved 0.1.0 TGZ through the actual Desktop rc.2 `loadProfileDirectory` loader without installing dependencies. Require the explicit rc.6 peer incompatibility diagnostic and omission of the old plugin layer, then use the same owned profile with actual rc.2 `runProfile`/Host initialization to prove `bash`, `wsl_bash`, `git_bash`, the plugin prompt, and plugin prompt schemas are absent. Both loader and Host children must have `exitCode=0/timedOut=false/closeObserved=true/reaped=true/error=null`, with matching host/TGZ identities and containment-checked temporary-root removal. An ordinary old-version pnpm offline-cache diagnostic remains SKIP and has no compatibility authority; missing/malformed TGZ typed rejection and cleanup remain hard checks.
 - [ ] Run `dsh --dump-config` against the temporary profile and verify the three tools, defaults, and no unexpected network/Web UI surface.
 - [ ] On Windows Node, run `dsh --profile <temporary> --help` as a startup smoke. Help output alone does not prove tool execution.

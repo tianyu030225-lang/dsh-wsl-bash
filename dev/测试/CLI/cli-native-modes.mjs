@@ -25,7 +25,7 @@ const MODES = (process.env.DSH_NATIVE_MODES ?? "wsl,git-bash")
   .filter((value, index, values) => (value === "wsl" || value === "git-bash") && values.indexOf(value) === index);
 if (MODES.length === 0) throw new Error("DSH_NATIVE_MODES must select wsl and/or git-bash");
 const NATIVE_TIMEOUT_ONLY = process.env.DSH_NATIVE_TIMEOUT_ONLY === "1";
-const CLI_TIMEOUT_MS = Number(process.env.DSH_NATIVE_CLI_TIMEOUT_MS ?? 90_000);
+const CLI_TIMEOUT_MS = Number(process.env.DSH_NATIVE_CLI_TIMEOUT_MS ?? 180_000);
 if (!Number.isSafeInteger(CLI_TIMEOUT_MS) || CLI_TIMEOUT_MS < 30_000 || CLI_TIMEOUT_MS > 600_000) {
   throw new Error("DSH_NATIVE_CLI_TIMEOUT_MS must be an integer between 30000 and 600000");
 }

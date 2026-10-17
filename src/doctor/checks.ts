@@ -10,8 +10,8 @@ import { SUPPORTED_DSH_VERSIONS, readDshVersion } from "../runtime.js";
 import { cleanWslBashArgv, sanitizedWslHostEnvironment } from "../wsl/bootstrap.js";
 
 export const EXPECTED_DSH_VERSIONS = SUPPORTED_DSH_VERSIONS;
-/** @deprecated The doctor accepts both versions in EXPECTED_DSH_VERSIONS. */
-export const EXPECTED_DSH_VERSION = EXPECTED_DSH_VERSIONS[1];
+/** @deprecated Use EXPECTED_DSH_VERSIONS for the exact supported host set. */
+export const EXPECTED_DSH_VERSION = EXPECTED_DSH_VERSIONS[0];
 
 export type DoctorStatus = "pass" | "fail" | "warn" | "skip";
 
@@ -65,7 +65,7 @@ export interface ProbeExecutionOptions {
 
 const MANUAL = {
   windows: "在 Windows 主机上运行 DSH；Linux/macOS 不提供 Windows 原生 Git Bash/WSL 后端。",
-  dsh: "使用已验证的 DSH 0.2.0-rc.2（Desktop）或 0.2.1-alpha.1（CLI）；不要忽略版本不兼容检查。",
+  dsh: "使用已验证的 DSH 0.2.1-rc.2（Desktop/CLI）；不要忽略版本不兼容检查。",
   wsl: "启用 Windows Subsystem for Linux，并确认 C:\\Windows\\System32\\wsl.exe 可执行。",
   distro: "安装/初始化 WSL2 Ubuntu：wsl --install -d Ubuntu；完成首次用户初始化后重试。",
   bash: "在 Ubuntu 中确认 /bin/bash 可执行。",

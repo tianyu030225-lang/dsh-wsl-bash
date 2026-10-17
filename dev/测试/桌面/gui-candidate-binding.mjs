@@ -19,6 +19,8 @@ export const REPO_ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.u
 export const RUN_ROOT = join(REPO_ROOT, "测试", "运行产物");
 export const OWNED_ROOT = join(RUN_ROOT, "gui-human-canonical-20261010-2340");
 export const FIXTURE_ID = "gui-human-canonical-20261010-2340";
+// This names the protected historical fixture, not the current release. Fresh
+// candidates are always supplied explicitly with their own SHA-256 binding.
 export const DEFAULT_TGZ_NAME = "dsh-plugin-bash-wsl-0.2.0.tgz";
 export const CANONICAL_TGZ_SHA256 =
   "9cb01907dd7a9558255b6b8d5fe5ef03349927711fef0aadf9456656fe2b6f63";

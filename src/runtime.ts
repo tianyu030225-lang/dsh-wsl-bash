@@ -4,12 +4,11 @@ import { isAbsolute } from "node:path";
 
 /** Exact host contracts supported by this release; never a floating range. */
 export const SUPPORTED_DSH_VERSIONS = Object.freeze([
-  "0.2.0-rc.2",
-  "0.2.1-alpha.1",
+  "0.2.1-rc.2",
 ] as const);
 
 /** @deprecated Use SUPPORTED_DSH_VERSIONS to include the Desktop contract. */
-export const SUPPORTED_DSH_VERSION = SUPPORTED_DSH_VERSIONS[1];
+export const SUPPORTED_DSH_VERSION = SUPPORTED_DSH_VERSIONS[0];
 
 const require = createRequire(import.meta.url);
 
@@ -59,7 +58,7 @@ export function readDshVersion(installAnchor?: string): string {
   }
 }
 
-/** Fail before registering a backend/tool outside the two tested contracts. */
+/** Fail before registering a backend/tool outside the tested host contract. */
 export function assertSupportedDshVersion(version = readDshVersion()): void {
   if (!(SUPPORTED_DSH_VERSIONS as readonly string[]).includes(version)) {
     throw new Error(

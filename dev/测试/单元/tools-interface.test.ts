@@ -46,6 +46,9 @@ function executionContext(options: {
   ]);
   const ctx = {
     get: vi.fn((name: string) => services.get(name)),
+    workingDirectory: {
+      ensure: vi.fn(async () => String(policy.workspaceRoot ?? "C:\\fixture")),
+    },
   } as any;
   return { ctx, spawn, approval, policy };
 }

@@ -1,28 +1,28 @@
-# dsh-plugin-bash-wsl 0.2.0
+# dsh-plugin-bash-wsl 0.2.1
 
 [English](README.md)
 
-面向 Windows DSH 的原生 Git Bash 与 WSL 后端插件，当前版本为 `0.2.0`。桌面版 `0.2.0-rc.2` 和 CLI `0.2.1-alpha.1` 共用同一个安装包。保留已有的 `pwsh` 工具，并为 Web/桌面版额外新增两个模式：
+面向 Windows DSH 的原生 Git Bash 与 WSL 后端插件，当前版本为 `0.2.1`。桌面版与 CLI `0.2.1-rc.2` 共用同一个安装包。保留已有的 `pwsh` 工具，并为 Web/桌面版额外新增两个模式：
 
 - **WSL 模式**（`bash-wsl`）：保留标准模式其他能力，默认使用按 Agent 隔离的持久 WSL `bash`；
 - **Git Bash 模式**（`bash-git-bash`）：保留标准模式其他能力，默认使用持久原生 Git Bash `bash`，需要当前会话明确选择完全权限。
 
 两个模式都提供一次性 `wsl_bash`、`git_bash` 和官方 `pwsh`。它们读取实际运行宿主自带的标准模式组合，不替换原有模式，也不改变默认选择；用户另行修改标准模式的内容不会自动复制。无界面的 CLI 仍默认使用持久 WSL，模式下拉菜单属于 Web/桌面版功能。
 
-目标运行时为 Node.js `>=22`，只接受上述两个宿主版本，不支持更早的 DSH；如需使用历史版本，请切换到对应标签查看说明。GitHub 源码公开与 npm 发布是两件事；当前尚未宣布 npm 发布，不要假定使用包名或未锁定的 `latest` 就能安装到本仓库的当前内容。
+目标运行时为 Node.js `>=22`，只接受 DSH `0.2.1-rc.2`，不支持更早的 DSH；如需使用历史版本，请切换到对应标签查看说明。GitHub 源码公开与 npm 发布是两件事；当前尚未宣布 npm 发布，不要假定使用包名或未锁定的 `latest` 就能安装到本仓库的当前内容。
 
-默认分支 `master` 只保留一个 `0.2.0` 发布源码快照提交，本页只介绍 `0.2.0`。旧版保留在历史标签中，不与当前版本并列展示。
+默认分支介绍当前 `0.2.1` 发布源码。历史版本继续保留在标签中：上一版使用 `v0.2.0`，只有 DSH `0.1.0-rc.6` 才使用 `v0.1.0`。
 
-公开的回归源码、smoke 脚本及夹具统一放在 [`dev/测试/`](dev/测试/)。历史运行产物仍保留在已忽略的根目录 `测试/运行产物/`，不进入 Git 或 npm 包。本次目录整理只做静态核对，没有重新运行测试、构建或发布门禁。
+公开的回归源码、smoke 脚本及夹具统一放在 [`dev/测试/`](dev/测试/)。历史运行产物仍保留在已忽略的根目录 `测试/运行产物/`，不进入 Git 或 npm 包。`0.2.1` 报告记录本次重新执行的测试、构建与发布门禁；旧报告只证明其明确绑定的历史制品。
 
-## 0.2.0 兼容性与发布证据
+## 0.2.1 兼容性与发布证据
 
 | 宿主 | 支持的 DSH 版本 |
 | --- | --- |
-| 桌面版 | `0.2.0-rc.2` |
-| CLI | `0.2.1-alpha.1` |
+| 桌面版 | `0.2.1-rc.2` |
+| CLI | `0.2.1-rc.2` |
 
-[0.2.0 双宿主报告](https://github.com/tianyu030225-lang/dsh-wsl-bash/blob/master/docs/testing-report-0.2.0.md)记录的是由完整 SHA-256 标识的历史冻结候选包。当前源码还包含之后的提示词和文档修订；历史 PASS 不自动覆盖后续修订或重新打出的包。同名文件或相同版本号不等于同一份制品。安装时应选择目标源码修订自行构建，或使用明确发布且附有校验值的 Release 附件。
+`0.2.1` 发布报告只对应一份由完整 SHA-256 标识的冻结候选包。[0.2.0 双宿主报告](docs/testing-report-0.2.0.md)只作为 `v0.2.0` 的历史证据保留。同名文件或相同版本号不等于同一份已测制品。安装时应选择目标源码修订自行构建，或使用明确发布且附有校验值的 Release 附件。
 
 > **非官方社区项目。** 本插件是独立、社区维护的扩展，**与 DeepSeek 无隶属、背书或赞助关系**。"DeepSeek Harness"与"DSH"为其各自所有者的商标。插件使用官方公开服务与依赖；本插件的任何缺陷、安全问题或行为变更均由本仓库负责，与 DeepSeek 或 DSH 项目无关。
 
@@ -32,6 +32,8 @@
 
 受限 WSL 模式（`read-only` 与 `workspace-write`）会遮蔽 `/run` 中的 Windows interop broker，并清除 `WSL_INTEROP`/`WSLENV`，因此 WSL 不能通过该 broker 启动 Windows `.exe`（例如 `cmd.exe`）。`danger-full-access` 作为明确的显式选择，故意保留宿主 interop。这是针对 Windows interop 的边界，不是通用 IPC 或服务隔离；宿主允许时，仍可能通过可达的本地服务或网络路径执行写入。
 
+所有 WSL Bash 入口都会在 Bash 有机会读取之前清除继承的启动控制变量，并在沙盒内明确建立可信的 `/bin/bash` Shell 身份。用户或父进程设置的 `BASH_ENV`、`ENV`、`SHELLOPTS`、`BASHOPTS` 不能在沙盒检查之前执行代码。
+
 Git Bash restricted 模式失败关闭：被拒绝的命令启动零进程。一次性命令只在 `danger-full-access`，或宿主审批授予的一次精确重试中执行；持久 Git Bash 则必须使用当前会话明确选择的 `danger-full-access`，一次性审批不能授权整个持久 Shell。选择 Git Bash 模式不会自动升权，持久会话也不会原地改变权限。插件不提供网络隔离；宿主/后端允许时，命令可能访问网络。`doctor` 只读，绝不自动安装依赖。
 
 持久 Git Bash 的命令直接在 Git Bash 中执行，不经过 PowerShell 或 WSL。插件使用一个小型宿主运行时助手统一回收终端及后台进程；它负责退出清理，不提供文件沙盒。缺少所需宿主运行库或 Windows 进程组能力时，启动失败，不转为无保护的执行方式。
@@ -40,7 +42,7 @@ Git Bash restricted 模式失败关闭：被拒绝的命令启动零进程。一
 
 - Windows，并已安装 Git Bash 和 WSL；
 - Node.js `>=22`；
-- 桌面版 DSH `0.2.0-rc.2` 或 CLI DSH `0.2.1-alpha.1`；
+- 桌面版或 CLI DSH `0.2.1-rc.2`；
 - 所有 WSL 模式需要所选发行版内的 `bwrap`、`script` 与 `realpath`；
 - Windows 集成测试需要可用的 Git Bash 可执行文件和 `wsl.exe`。
 
@@ -52,7 +54,7 @@ Git Bash restricted 模式失败关闭：被拒绝的命令启动零进程。一
 
 Git 不包含 `dist/` 和生成的 TGZ。GitHub 源码 ZIP 不是可直接安装的 DSH 插件包；检出目录中遗留的旧同名 TGZ 也不能当成后续版本使用。
 
-构建 `0.2.0` 源码需要 Windows Node.js `>=22`，以及 `package.json` 指定的 `pnpm@11.21.0`。克隆本仓库、选择要安装的源码修订后，在该检出目录中使用 Windows PowerShell 执行：
+构建 `0.2.1` 源码需要 Windows Node.js `>=22`，以及 `package.json` 指定的 `pnpm@11.21.0`。克隆本仓库、选择要安装的源码修订后，在该检出目录中使用 Windows PowerShell 执行：
 
 ```powershell
 pnpm install --frozen-lockfile
@@ -60,7 +62,9 @@ New-Item -ItemType Directory -Force -Path ".packages" | Out-Null
 pnpm pack --pack-destination ".packages"
 ```
 
-现有 `prepack` 会执行 `pnpm run build`，只清理和重建当前检出目录的 `dist/`；源码构建时不要省略开发依赖。生成的 `0.2.0` 安装包位于 `.packages/dsh-plugin-bash-wsl-0.2.0.tgz`，正式发布时应同时提供该包的校验值。这些是构建步骤，不代表新生成的包已经通过历史报告中的完整门禁。
+现有 `prepack` 会执行 `pnpm run build`，只清理和重建当前检出目录的 `dist/`；源码构建时不要省略开发依赖。生成的 `0.2.1` 安装包位于 `.packages/dsh-plugin-bash-wsl-0.2.1.tgz`，正式发布时应同时提供该包的校验值。这些是构建步骤，不代表新生成的包已经通过完整门禁。
+
+`file:` 或 hoisted 本地安装得到的是部署副本或硬链接；即使当前检出目录完成 clean rebuild，profile 中已安装文件的 inode 也可能没有更新。因此，只重建或只重启不能证明宿主已加载新代码。必须把新 TGZ 重新安装到准确的目标或隔离 profile，核对运行时 `installAnchor`，并比较已安装 `dist` 与当前构建的哈希。`link:` 只适合经过明确核验的本地开发，不能充当发布证据。
 
 开发可以使用 WSL 作为命令环境，但目标仍是 Windows DSH：从 WSL 工作时应调用 Windows 侧 Node/包管理工具，项目和产物保留在 Windows 盘，不要为本插件把 DSH 安装到 WSL。当前不承诺直接 Git URL 安装，请使用构建后的 TGZ。单独执行 `npm install` 安装依赖，不等于已经构建插件或注册到 DSH 配置。
 
@@ -70,7 +74,7 @@ pnpm pack --pack-destination ".packages"
 
 ```powershell
 Get-Command dsh
-dsh plugin --profile web add "C:\work\dsh-wsl-bash\.packages\dsh-plugin-bash-wsl-0.2.0.tgz"
+dsh plugin --profile web add "C:\work\dsh-wsl-bash\.packages\dsh-plugin-bash-wsl-0.2.1.tgz"
 ```
 
 确认 `Get-Command dsh` 命中 Windows 安装入口。该命令针对其 `web` 配置；桌面版使用独立的 `desktop` 配置，请在 **设置 → 插件 → 添加插件** 中选择同一个 TGZ。装到 `web` 不等于装到桌面版。安装后重启对应宿主并新建会话。包元数据会加载 `cordis.patch.yml`；请保留已有 PowerShell bundle。最小隔离 headless 配置片段是：
@@ -110,7 +114,7 @@ dsh plugin --profile web add "C:\work\dsh-wsl-bash\.packages\dsh-plugin-bash-wsl
 
 一次性 `wsl_bash`/`git_bash` 调用需要 `command` 和 `description`；`description` 只用于 UI/日志，不影响执行。持久 `bash` 只需要 `command`，并保留按 Agent 隔离的状态。
 
-`wsl_bash` 的 `workdir` 可用相对路径、Windows 驱动器路径或等价的 `/mnt/<drive>/...` 路径。所有写法都必须解析到宿主指定的同一工作区内部，符号链接或 junction 逃逸仍会被拒绝。
+`wsl_bash` 的 `workdir` 可用相对路径、Windows 驱动器路径或所选发行版中的等价 Linux 路径。生产运行时通过该发行版真实的 `wslpath` 与 `realpath` 解析，所以 automount 根目录不必固定为 `/mnt`。所有写法都必须解析到宿主指定的同一工作区内部，符号链接或 junction 逃逸仍会被拒绝。
 
 `git_bash` 省略 `workdir` 时使用宿主提供的当前代理工作区，相对路径也从该工作区解析，不使用 DSH 进程目录。显式 Windows 路径仍经过原有路径检查。
 
@@ -182,7 +186,7 @@ dsh plugin --profile web remove dsh-plugin-bash-wsl
 
 | 现象 | 检查 |
 | --- | --- |
-| 插件不加载 | 确认插件为 `0.2.0`、Node `>=22`，实际宿主为 `0.2.0-rc.2` 或 `0.2.1-alpha.1`；不要忽略版本检查。 |
+| 插件不加载 | 确认插件为 `0.2.1`、Node `>=22`，实际宿主为 `0.2.1-rc.2`；不要忽略版本检查。 |
 | CLI 可用但桌面版没有 | `web` 与 `desktop` 配置独立，确认真正运行的宿主加载了目标配置，安装后重启对应宿主。 |
 | `workspace-write` 不可用 | 运行 `doctor`；由宿主的正常系统流程安装 `bwrap`/`script` 后重启 DSH。插件不会降级到不受限执行。 |
 | 空格或中文路径失败 | 一次性工具可传 `workdir`；持久 `bash` 只接受 `command`，应在命令中使用正确引用的 `cd`，并遵守对应工作区边界。 |

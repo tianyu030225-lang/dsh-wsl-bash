@@ -25,7 +25,7 @@ import {
 } from "./gui-candidate-binding.mjs";
 
 const REPO_ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
-const EXPECTED_ASAR_SHA256 = "983ca71114e6dfd353fc79af5a1f9481a250ee64c2a3c757673029b811b23bc2";
+const EXPECTED_ASAR_SHA256 = "47874618bf5b3011fcaac10cd4c85f69da333e70d4f99b921207c78d0999512a";
 const RUN_ROOT = join(REPO_ROOT, "测试", "运行产物");
 
 function installedDesktopPaths() {
@@ -103,7 +103,7 @@ console.log(JSON.stringify({
   started: true,
   pid: child.pid,
   fixture: FIXTURE_ID,
-  runtime: "DeepSeek Harness Desktop 0.2.0-rc.2",
+  runtime: "DeepSeek Harness Desktop 0.2.1-rc.2",
   tgzSha256: candidate.tgzSha256,
   candidateBinding: {
     tgzRelativePath: candidate.tgzRelativePath,

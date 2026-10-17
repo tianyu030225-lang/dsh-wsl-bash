@@ -20,12 +20,14 @@
  */
 
 import { createHash, randomUUID } from "node:crypto";
+import { createRequire } from "node:module";
 import {
   closeSync,
   createReadStream,
   existsSync,
   mkdirSync,
   openSync,
+  readFileSync,
   realpathSync,
   writeFileSync,
 } from "node:fs";
@@ -61,7 +63,7 @@ const OBSERVATION_ARTIFACT = `gui-deepseek-real-session-observation-ready-202610
 const RESULT_PATH = join(RUN_ROOT, RESULT_ARTIFACT);
 const OBSERVATION_RESULT_PATH = join(RUN_ROOT, OBSERVATION_ARTIFACT);
 const LEDGER_BASELINE_PATH = join(RUN_ROOT, "gui-owned-linux-ledger-baseline-20261011.json");
-const EXPECTED_ASAR_SHA256 = "983ca71114e6dfd353fc79af5a1f9481a250ee64c2a3c757673029b811b23bc2";
+const EXPECTED_ASAR_SHA256 = "47874618bf5b3011fcaac10cd4c85f69da333e70d4f99b921207c78d0999512a";
 const EXPECTED_TOOL_NAME = "bash";
 const WSL_MARKER_STRATEGY = "read-only Linux ledger of owned bwrap plus bash/script/stty markers: bwrap commandline requires exact fixture workspace and DSH_SHELL/DSH_SESSION_ID/DSH_PTY_SESSION_ID; shell children require exact workspace cwd; no PID is killed, and empty post-ledger is required for PASS";
 const MARKERS = ["DSH_GUI_TURN1", "DSH_GUI_TURN2"];
@@ -83,6 +85,22 @@ const PERMISSION_COMMAND_DEFINITION_ID = "@deepseek-ai/dsh-permission-presets";
 const PERMISSION_COMMAND_NAME = "permission";
 const WORKSPACE_WRITE_PRESET = "workspace-write";
 const FULL_ACCESS_PRESET = "danger-full-access";
+
+async function loadWebSocketConstructor() {
+  const appData = process.env.APPDATA;
+  if (typeof appData !== "string" || !isAbsolute(appData)) {
+    throw new Error("APPDATA must be an absolute Windows path for the GUI transport client");
+  }
+  const cliAnchor = join(appData, "npm", "node_modules", "@deepseek-ai", "dsh", "package.json");
+  if (!existsSync(cliAnchor)) throw new Error("matching Windows CLI DSH package is missing");
+  const cliManifest = JSON.parse(readFileSync(cliAnchor, "utf8"));
+  if (cliManifest.version !== "0.2.1-rc.2") {
+    throw new Error(`Windows CLI DSH ${String(cliManifest.version)} does not match Desktop 0.2.1-rc.2`);
+  }
+  const hostRequire = createRequire(cliAnchor);
+  const modulePath = hostRequire.resolve("ws");
+  return (await import(pathToFileURL(modulePath).href)).default;
+}
 
 function selectSessionPreset(value = process.env.DSH_GUI_PRESET) {
   const requested = value === undefined || String(value).trim() === ""
@@ -927,7 +945,15 @@ async function terminateOwnedChild(child, markers, evidence) {
   const live = child.exitCode === null && child.signalCode === null && Number.isInteger(child.pid);
   evidence.terminationAttempted = live;
   const processMarkers = Array.isArray(markers) ? markers : [markers];
-  evidence.lineageBeforeTerminate = await queryOwnedLineage(child.pid, processMarkers);
+  const retainedPreclose = evidence.lineageBeforeTerminate;
+  const retainedPrecloseValid = !live
+    && retainedPreclose?.available === true
+    && retainedPreclose.verified === true
+    && Array.isArray(retainedPreclose.identities)
+    && retainedPreclose.identities.length > 0;
+  if (!retainedPrecloseValid) {
+    evidence.lineageBeforeTerminate = await queryOwnedLineage(child.pid, processMarkers);
+  }
   const expectedAfterIdentities = [
     ...(evidence.lineageInitial?.identities ?? []),
     ...(evidence.lineageBeforeTerminate?.identities ?? []),
@@ -1589,7 +1615,7 @@ async function main() {
     },
     status: "RUNNING",
     fixture: FIXTURE_ID,
-    runtime: "DeepSeek Harness Desktop 0.2.0-rc.2",
+    runtime: "DeepSeek Harness Desktop 0.2.1-rc.2",
     tgzSha256,
     candidateBinding: {
       tgzRelativePath: candidate.tgzRelativePath,
@@ -1709,6 +1735,9 @@ async function main() {
   let cookie;
   let WebSocketCtor;
   let initialLineageTask;
+  let ownedProcessMarkers;
+  let transportBase;
+  let transportHost;
   try {
     const protectedBefore = protectedFixtureEvidence(OWNED_ROOT, rootReal);
     summary.cleanup.protectedFixturePreserved = protectedBefore.preserved;
@@ -1742,12 +1771,13 @@ async function main() {
       stdio: ["ignore", "pipe", stderrFd],
     });
     closeSync(stderrFd);
-    const ownedProcessMarkers = [userData, OWNED_ROOT, workspace];
+      ownedProcessMarkers = [userData, OWNED_ROOT, workspace];
     initialLineageTask = captureInitialLineage(child.pid, ownedProcessMarkers);
     child.stdout?.setEncoding("utf8");
     let stdoutBuffer = "";
     let captureLaunchToken = true;
     let launchToken;
+    let launchBase;
     const tokenWait = new Promise((resolvePromise, rejectPromise) => {
       const timer = setTimeout(() => rejectPromise(new Error("owned Desktop launch token was not observed within 20s")), CHILD_START_TIMEOUT_MS);
       const onError = (error) => {
@@ -1759,9 +1789,11 @@ async function main() {
       child.stdout?.on("data", (chunk) => {
         if (!captureLaunchToken) return;
         stdoutBuffer = `${stdoutBuffer}${chunk}`.slice(-64 * 1024);
+        const urlMatch = stdoutBuffer.match(/https?:\/\/(?:127\.0\.0\.1|localhost|\[::1\]):\d+\/[^\s"'<>]*[?&]token=[^\s&#"'<>]+/i);
         const match = stdoutBuffer.match(/[?&]token=([^\s&#"'<>]+)/i);
         if (match === null || launchToken !== undefined) return;
         try {
+          if (urlMatch !== null) launchBase = new URL(urlMatch[0]).origin;
           launchToken = decodeURIComponent(match[1]);
         } catch (error) {
           onError(new Error("owned Desktop launch token was malformed", { cause: error }));
@@ -1778,13 +1810,16 @@ async function main() {
     summary.cleanup.lineageInitial = await initialLineageTask;
     if (typeof launchToken !== "string" || launchToken.length === 0) throw new Error("owned Desktop launch token was empty");
 
-    const base = "http://127.0.0.1:19387";
+    const base = launchBase ?? "http://127.0.0.1:19387";
+    const baseHost = new URL(base).host;
+    transportBase = base;
+    transportHost = baseHost;
     const authBounded = abortableSignal(undefined, RPC_TIMEOUT_MS, "owned Desktop auth exchange timed out");
     let rootResponse;
     try {
       rootResponse = await fetch(`${base}/?token=${encodeURIComponent(launchToken)}`, {
         redirect: "manual",
-        headers: { Host: "127.0.0.1:19387" },
+        headers: { Host: baseHost },
         signal: authBounded.signal,
       });
     } finally {
@@ -1800,7 +1835,7 @@ async function main() {
     launchToken = undefined;
     summary.ephemeralLocalTransportAuthHandled = true;
     const origin = base;
-    const headers = { "content-type": "application/json", Cookie: cookie, Host: "127.0.0.1:19387", Origin: origin };
+    const headers = { "content-type": "application/json", Cookie: cookie, Host: baseHost, Origin: origin };
     async function rpc(endpoint, args, parentSignal = undefined, timeoutMs = RPC_TIMEOUT_MS) {
       const rpcId = randomUUID();
       const bounded = abortableSignal(parentSignal, timeoutMs, `official RPC ${endpoint} timed out`);
@@ -1886,7 +1921,7 @@ async function main() {
     if (!isRecord(renamed) || typeof renamed.title !== "string" || !Number.isSafeInteger(renamed.seq)) throw new Error("session/rename returned an invalid result");
     summary.sessionTitle = renamed.title;
 
-    WebSocketCtor = (await import(pathToFileURL(join(dirname(appAsar), "app.asar", "dsh", "node_modules", "ws", "wrapper.mjs")).href)).default;
+    WebSocketCtor = await loadWebSocketConstructor();
     socket = await openWebSocket(WebSocketCtor, `${base.replace("http:", "ws:")}/api/remote.mux`, cookie, origin);
     queue = new AsyncQueue();
     const streamId = randomUUID();
@@ -2075,6 +2110,15 @@ async function main() {
           clearTimeout(timer);
           if (SESSION_PRESET !== "bash-git-bash") {
             summary.cleanup.wslLedgerBefore = await queryOwnedWslLedger(workspace);
+            } else {
+              if (summary.cleanup.lineageInitial === null && initialLineageTask !== undefined) {
+                summary.cleanup.lineageInitial = await initialLineageTask;
+              }
+              summary.cleanup.lineageBeforeTerminate = await queryOwnedLineage(
+                child.pid,
+                ownedProcessMarkers,
+                summary.cleanup.lineageInitial?.identities ?? [],
+              );
           }
           summary.observationReady = true;
           summary.observationReadyAt = new Date().toISOString();
@@ -2111,11 +2155,12 @@ async function main() {
       try {
         const cancelSignal = new AbortController();
         cancelTimer = setTimeout(() => cancelSignal.abort(new Error("session/cancel timed out")), CANCEL_TIMEOUT_MS);
-        const rpcBase = "http://127.0.0.1:19387";
+        const rpcBase = transportBase ?? "http://127.0.0.1:19387";
+        const rpcHost = transportHost ?? new URL(rpcBase).host;
         const rpcId = randomUUID();
         const response = await fetch(`${rpcBase}/api/session/cancel`, {
           method: "POST",
-          headers: { "content-type": "application/json", Cookie: cookie, Host: "127.0.0.1:19387", Origin: rpcBase },
+          headers: { "content-type": "application/json", Cookie: cookie, Host: rpcHost, Origin: rpcBase },
           body: JSON.stringify({ type: "client-request", rpcId, method: "session/cancel", payload: { args: { request: { sessionId } } } }),
           signal: cancelSignal.signal,
         });

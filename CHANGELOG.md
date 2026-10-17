@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.2.1
+
+This security, reliability, and host-compatibility update keeps the same tool
+names, mode names, parameters, and permission model as `0.2.0`.
+
+- Targets the current Desktop and CLI DSH `0.2.1-rc.2` host contract exactly;
+  earlier DSH builds remain on plugin `0.2.0` or `0.1.0` as documented.
+- Uses the host's `workingDirectory` service for persistent and one-shot shells,
+  so new sessions follow the current agent workspace while the immutable sandbox
+  workspace remains the authority for containment.
+- Declares the exact host through `engines.dsh` and aligns every official peer
+  dependency with the same `0.2.1-rc.2` release.
+
+- Sanitizes Bash startup-control variables before every WSL Bash launch and
+  establishes a trusted `SHELL` inside the sandbox without restoring Windows
+  interop in restricted modes.
+- Resolves Windows paths through the selected distribution's real `wslpath` and
+  `realpath`, while passing the validated Windows path to `wsl.exe --cd`; this
+  supports non-default automount roots without weakening containment checks.
+- Makes doctor probes use clean Bash, UTF-8 WSL launcher output, and the selected
+  distribution's actual launch result, while remaining read-only.
+- Preserves terminal control bytes safely, rejects NUL, reports incomplete output
+  after any capture gap, binds protocol replies to the current prompt, and makes
+  stdin write failures ordered transport failures.
+- Preserves and renders structured one-shot failures, including spawn and runner
+  diagnostics, and checks WSL PTY permission denial in the merged output stream.
+- Replaces platform-shaped test assumptions with filesystem seams and semantic
+  skip classification checks. Release evidence remains tied to one exact TGZ.
+
 ## 0.2.0
 
 This is the successor to `0.1.0` in the same repository, with one package for both supported hosts. npm publication is separate from GitHub source publication.

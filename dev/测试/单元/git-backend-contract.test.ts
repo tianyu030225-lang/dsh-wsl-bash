@@ -11,6 +11,25 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const resolveGitBashPath = vi.hoisted(() => vi.fn());
 const spawnGitBashPty = vi.hoisted(() => vi.fn());
 
+vi.mock("node:fs", async () => {
+  const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
+  const isLogicalWindowsPath = (value: unknown): value is string =>
+    typeof value === "string" && /^[A-Za-z]:[\\/]/.test(value);
+  const realpathSync = Object.assign(
+    ((path: Parameters<typeof actual.realpathSync>[0], options?: Parameters<typeof actual.realpathSync>[1]) =>
+      isLogicalWindowsPath(path) ? path : actual.realpathSync(path, options as never)) as typeof actual.realpathSync,
+    {
+      native: ((path: Parameters<typeof actual.realpathSync.native>[0], options?: Parameters<typeof actual.realpathSync.native>[1]) =>
+        isLogicalWindowsPath(path) ? path : actual.realpathSync.native(path, options as never)) as typeof actual.realpathSync.native,
+    },
+  );
+  const statSync = ((path: Parameters<typeof actual.statSync>[0], options?: Parameters<typeof actual.statSync>[1]) =>
+    isLogicalWindowsPath(path)
+      ? { isDirectory: () => true, isFile: () => false }
+      : actual.statSync(path, options as never)) as typeof actual.statSync;
+  return { ...actual, realpathSync, statSync };
+});
+
 vi.mock("../../../src/discovery/git-bash.js", async () => {
   const actual = await vi.importActual<typeof import("../../../src/discovery/git-bash.js")>(
     "../../../src/discovery/git-bash.js",
@@ -47,10 +66,10 @@ function createHostGitFixture(delayMs = 0): {
   const anchor = join(root, "node_modules", "@deepseek-ai", "dsh", "package.json");
   const shellPath = join(root, "Git", "bin", "bash.exe");
 
-  writeJson(anchor, { name: "@deepseek-ai/dsh", version: "0.2.1-alpha.1" });
+  writeJson(anchor, { name: "@deepseek-ai/dsh", version: "0.2.1-rc.2" });
   writeJson(join(root, "node_modules", "@deepseek-ai", "dsh-terminal-bash", "package.json"), {
     name: "@deepseek-ai/dsh-terminal-bash",
-    version: "0.2.1-alpha.1",
+    version: "0.2.1-rc.2",
     type: "module",
     exports: { ".": "./index.js" },
   });
@@ -90,7 +109,11 @@ function createHostGitFixture(delayMs = 0): {
   mkdirSync(dirname(shellPath), { recursive: true });
   writeFileSync(shellPath, "fixture", "utf8");
 
-  return { anchor, workspaceRoot: root, shellPath };
+  return {
+    anchor,
+    workspaceRoot: String.raw`C:\fixture\unit-git-backend\workspace`,
+    shellPath,
+  };
 }
 
 function createContext(

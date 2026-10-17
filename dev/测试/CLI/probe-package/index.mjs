@@ -1571,7 +1571,7 @@ async function inspectServices(ctx, api) {
   const names = tools.schemas().map((schema) => schema.name);
   const backends = terminals.listBackends();
   const hostVersion = api.readDshVersion(profileContext.installAnchor);
-  assert(["0.2.0-rc.2", "0.2.1-alpha.1"].includes(hostVersion), `unexpected host version ${hostVersion}`);
+  assert(hostVersion === "0.2.1-rc.2", `unexpected host version ${hostVersion}`);
   assert(names.includes("wsl_bash"), "wsl_bash is not registered in the CLI context");
   assert(names.includes("git_bash"), "git_bash is not registered in the CLI context");
   assert(names.includes("bash"), "official persistent bash tool is not registered in the CLI context");
@@ -4379,6 +4379,7 @@ async function main(ctx) {
   // root rather than a copied policy implementation.
   const policy = await resolveProbePolicy(ctx, services);
   const checks = [];
+  const deferredDesktopCleanup = [];
   const lifecycle = { initial: contextLifecycleSnapshot(ctx) };
   checks.push(await runCase("CLI-01 official services, version, and registration", () => inspectServices(ctx, api)));
 
@@ -4624,8 +4625,7 @@ async function main(ctx) {
      assert(calls.length === 0, `restricted Git Bash created ${calls.length} child process(es)`);
       return { denied: true, spawnCount: calls.length, failure: result.failure?.kind };
    }));
-    lifecycle.beforeSEC08 = contextLifecycleSnapshot(ctx);
-    checks.push(await runCase("SEC-08 approval guard and official danger retry start zero children", async () => {
+    const runSec08 = () => runCase("SEC-08 approval guard and official danger retry start zero children", async () => {
       const approvalTiming = { startedAt: Date.now() };
       const calls = [];
       const result = await api.executeGitBash(
@@ -4747,13 +4747,24 @@ async function main(ctx) {
         };
       } finally {
         if (handle?.dispose) {
-          const disposeStartedAt = Date.now();
-          try { await handle.dispose(); } catch {}
-          approvalTiming.disposeMs = Date.now() - disposeStartedAt;
+          const ownedHandle = handle;
+          const disposeApprovalAgent = async () => {
+            const disposeStartedAt = Date.now();
+            await ownedHandle.dispose();
+            approvalTiming.disposeMs = Date.now() - disposeStartedAt;
+          };
+          if (process.env.DSH_DESKTOP_PROBE === "1") {
+            // In the Desktop composition, disposing this policy-mutated child
+            // immediately can retire the probe's own scoped services. Keep the
+            // owner alive until every security assertion has consumed those
+            // services, then dispose it before returning structured evidence.
+            deferredDesktopCleanup.push(disposeApprovalAgent);
+          } else {
+            try { await disposeApprovalAgent(); } catch {}
+          }
         }
       }
-    }));
-    lifecycle.afterSEC08 = contextLifecycleSnapshot(ctx);
+    });
     checks.push(await runCase("SEC-09 missing sandbox dependency fails closed", async () => {
       const calls = [];
       const result = await api.executeWslBash(
@@ -5037,6 +5048,25 @@ async function main(ctx) {
         cancellation: { aborted: true, failure: cancelled.failure?.kind, readinessBarrierMs: "<=1500", spawnCount: cancelHandles.length, managedWaitForExit: true, managedQuiescent: true, tree: "reaped" },
       };
     }));
+    // The real Desktop `ask` path may wait for its bounded no-answerer timeout
+    // and retire this probe's scoped services. Run that exact zero-spawn check
+    // last so the timeout cannot prevent the other required security controls
+    // from executing; CLI still runs the same assertion and cleanup.
+    lifecycle.beforeSEC08 = contextLifecycleSnapshot(ctx);
+    checks.push(await runSec08());
+    lifecycle.afterSEC08 = contextLifecycleSnapshot(ctx);
+  }
+  for (const cleanup of deferredDesktopCleanup) {
+    try {
+      await cleanup();
+    } catch (error) {
+      checks.push({
+        id: "SEC-08 desktop deferred approval owner cleanup",
+        status: "FAIL",
+        detail: sanitized(error?.stack ?? error),
+        durationMs: 0,
+      });
+    }
   }
   return {
     schemaVersion: 1,

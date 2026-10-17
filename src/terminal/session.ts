@@ -190,9 +190,10 @@ export class WslPtyTransportAdapter implements WslPtyTransport {
         if (!this.closed && !this.output.destroyed) this.output.destroy(asError(error));
       };
       this.stdinClose = (): void => {
-        if (!this.closed && !this.processDone && !this.output.destroyed) {
-          this.output.destroy(new Error("dsh-plugin-bash-wsl: subprocess stdin closed unexpectedly"));
-        }
+        // A managed child may close stdin immediately before its normal `done`
+        // settlement. An active write has its own close listener and rejects;
+        // outside a write, close alone is not a transport fault. Any later send
+        // still fails through writePipe's closed/destroyed guard.
         handle.stdin?.off("error", this.stdinError);
       };
       handle.stdin.on("error", this.stdinError);

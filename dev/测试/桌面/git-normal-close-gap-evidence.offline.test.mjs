@@ -28,7 +28,7 @@ const RUN_OUTPUT_ROOT = join(ROOT, "测试", "运行产物");
 const EXPECTED = {
   modeId: "bash-git-bash",
   fixture: "gui-human-canonical-20261010-2340",
-  runtime: "DeepSeek Harness Desktop 0.2.0-rc.2",
+  runtime: "DeepSeek Harness Desktop 0.2.1-rc.2",
   provider: "deepseek-account",
   model: "deepseek-flash",
   candidateSha256: "a".repeat(64),

@@ -5,7 +5,7 @@
  *
  * The script deliberately does not invoke `npm publish`, `git push`, or mutate
  * a user's host profile. The temporary profile install is local and offline;
- * Desktop rc.2 / CLI alpha.1 bundles resolve from the installed host, and every result is
+ * Desktop and CLI 0.2.1-rc.2 bundles resolve from the installed host, and every result is
  * reported as PASS/FAIL/SKIP.
  */
 
@@ -34,8 +34,8 @@ const root = resolve(import.meta.dirname, "..");
 const packageJsonPath = join(root, "package.json");
 const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
 const expectedName = "dsh-plugin-bash-wsl";
-const expectedVersion = "0.2.0";
-const expectedCliVersion = "0.2.1-alpha.1";
+const expectedVersion = "0.2.1";
+const expectedCliVersion = "0.2.1-rc.2";
 const expectedSecurityModes = ["read-only", "workspace-write", "danger-full-access"];
 const requiredSecurityCheckIds = [
   "SEC-01 WSL capability preflight",
@@ -74,8 +74,8 @@ const requiredIntegrationIds = [
   "CLI-09 initialization cancellation sends zero commands",
 ];
 const runOutputRoot = join(root, "测试", "运行产物");
-const expectedDesktopAsarSha256 = "983ca71114e6dfd353fc79af5a1f9481a250ee64c2a3c757673029b811b23bc2";
-const expectedDesktopExecutableSha256 = "df4e91fd91f6f1bee19a1990b0e167bfe06abf8353279d82bbb8e60edb6ba0d3";
+const expectedDesktopAsarSha256 = "47874618bf5b3011fcaac10cd4c85f69da333e70d4f99b921207c78d0999512a";
+const expectedDesktopExecutableSha256 = "9c789407850773ce7d914a3ec0476852bf1ceea69789d8ccf4e39be953f4bf52";
 const d16SessionDriverPath = join(root, "dev", "测试", "桌面", "run-owned-gui-session.mjs");
 const d16LauncherPath = join(root, "dev", "测试", "桌面", "run-owned-gui-session-wrapper.mjs");
 const nativeModesDesktopProbePath = join(root, "dev", "测试", "桌面", "new-modes-desktop-artifact.mjs");
@@ -1098,7 +1098,7 @@ function validateD16Evidence(evidence, tarball, options = {}) {
     "adapter reports a protocol failure");
   require(isSha256(adapter.sessionIdSha256), "owned session identity hash is missing");
   require(adapter.fixture === "gui-human-canonical-20261010-2340", "owned canonical fixture identity mismatch");
-  require(adapter.runtime === "DeepSeek Harness Desktop 0.2.0-rc.2", "Desktop rc.2 runtime identity mismatch");
+  require(adapter.runtime === "DeepSeek Harness Desktop 0.2.1-rc.2", "Desktop rc.2 runtime identity mismatch");
   require(isSha256(expectedTgzSha256) && adapter.tgzSha256 === expectedTgzSha256,
     "adapter TGZ SHA does not match this gate's fresh pack");
   if (candidateMode) {
@@ -1413,7 +1413,7 @@ function desktopRuntimeNegativeIsClean(evidence, oldTgz) {
     && evidence.acceptanceId === "D-14 old-version runtime rejection"
     && evidence.status === "PASS"
     && evidence.loaderStatus === "PASS"
-    && evidence.host?.desktopVersion === "0.2.0-rc.2"
+    && evidence.host?.desktopVersion === "0.2.1-rc.2"
     && evidence.host?.executableSha256 === fileSha256(paths.executable)
     && evidence.host?.appAsarSha256 === fileSha256(paths.asar)
     && evidence.fixture?.name === expectedName
@@ -1500,6 +1500,8 @@ function assertPackageMetadata() {
     record("package metadata", "FAIL", `version=${packageJson.version}, expected ${expectedVersion}`);
   } else if (packageJson.engines?.node !== ">=22") {
     record("package metadata", "FAIL", `engines.node=${packageJson.engines?.node}`);
+  } else if (packageJson.engines?.dsh !== "0.2.1-rc.2") {
+    record("package metadata", "FAIL", `engines.dsh=${packageJson.engines?.dsh}`);
   } else {
     const peerEntries = Object.entries(packageJson.peerDependencies ?? {});
     const unsupported = peerEntries.filter(([, spec]) => {
@@ -1510,15 +1512,20 @@ function assertPackageMetadata() {
       "@deepseek-ai/cordis",
       "@deepseek-ai/dsh",
       "@deepseek-ai/dsh-agent",
+      "@deepseek-ai/dsh-agent-preset-registry",
       "@deepseek-ai/dsh-app-boot",
       "@deepseek-ai/dsh-sandbox",
       "@deepseek-ai/dsh-sandbox-policy",
       "@deepseek-ai/dsh-subprocess",
+      "@deepseek-ai/dsh-subprocess-local",
       "@deepseek-ai/dsh-system-prompt",
       "@deepseek-ai/dsh-terminal",
+      "@deepseek-ai/dsh-terminal-bash",
       "@deepseek-ai/dsh-tool-bash-persistent",
       "@deepseek-ai/dsh-tools",
       "@deepseek-ai/dsh-user-approval",
+      "@deepseek-ai/dsh-win32-process",
+      "@deepseek-ai/dsh-working-directory",
     ];
     const missingPeers = requiredPeers.filter((name) => packageJson.peerDependencies?.[name] === undefined);
     if (unsupported.length > 0 || missingPeers.length > 0) {
@@ -1526,16 +1533,16 @@ function assertPackageMetadata() {
     } else {
       record("package metadata", "PASS", `${expectedName}@${expectedVersion}, exact Desktop/CLI peer declarations, Node ${packageJson.engines.node}`);
       const dshPeerNames = requiredPeers.filter((name) => name !== "@deepseek-ai/cordis");
-      const expectedDshPeerSpec = "0.2.0-rc.2 || 0.2.1-alpha.1";
-      const dualHostMissing = dshPeerNames.filter((name) => {
+      const expectedDshPeerSpec = "0.2.1-rc.2";
+      const currentHostMissing = dshPeerNames.filter((name) => {
         const spec = String(packageJson.peerDependencies[name]);
         return spec !== expectedDshPeerSpec;
       });
-      record("dual-host peer matrix", dualHostMissing.length === 0 ? "PASS" : "FAIL", dualHostMissing.length === 0
+      record("current-host peer matrix", currentHostMissing.length === 0 ? "PASS" : "FAIL", currentHostMissing.length === 0
         ? `all DSH peers equal ${expectedDshPeerSpec}`
-        : `DSH peers must equal ${expectedDshPeerSpec}: ${dualHostMissing.join(",")}`);
+        : `DSH peers must equal ${expectedDshPeerSpec}: ${currentHostMissing.join(",")}`);
       const cordisSpec = String(packageJson.peerDependencies["@deepseek-ai/cordis"]);
-      const expectedCordisSpec = "4.0.4 || 4.0.5-alpha.1";
+      const expectedCordisSpec = "4.0.5";
       record("Cordis peer matrix", cordisSpec === expectedCordisSpec ? "PASS" : "FAIL", cordisSpec === expectedCordisSpec
         ? `Cordis peer equals ${expectedCordisSpec}`
         : `Cordis peer must equal ${expectedCordisSpec}, received ${cordisSpec}`);
@@ -2253,7 +2260,7 @@ try {
         ?? desktopEvidence?.probeIdentity?.installedProbeObserverSha256,
       probeObserverHashesMatch: desktopEvidence?.probeIdentity?.probeObserverHashesMatch,
     }, sourceProbeIndexSha256);
-    const desktopRuntimeOk = desktopEvidence?.target === "Desktop 0.2.0-rc.2 / plugin 0.2.0"
+    const desktopRuntimeOk = desktopEvidence?.target === "Desktop 0.2.1-rc.2 / plugin 0.2.1"
       && desktopTopChecks.find((check) => check?.id === "desktop-runtime:version")?.status === "PASS";
     const desktopApprovalVariantOk = desktopEvidence?.approvalVariant?.mode === "no-remote-answerer"
       && desktopEvidence?.approvalVariant?.disabled === true
@@ -2360,7 +2367,7 @@ try {
       && desktopCapPhase?.close?.kill?.closeObserved === true
       && desktopCapPhase?.close?.kill?.reaped === true
       && desktopCapPhase?.close?.kill?.aliveAfter === false;
-    const desktopCapHostOk = desktopCapEvidence?.target === "Desktop 0.2.0-rc.2 / plugin 0.2.0"
+    const desktopCapHostOk = desktopCapEvidence?.target === "Desktop 0.2.1-rc.2 / plugin 0.2.1"
       && desktopCapEvidence?.package?.tgzSha256 === fileSha256(securityTgz)
       && probeIdentityIsClean({
         probeSourceIndexSha256: desktopCapEvidence?.probeIdentity?.sourceProbeIndexSha256,

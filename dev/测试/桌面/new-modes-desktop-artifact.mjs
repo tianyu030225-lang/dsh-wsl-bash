@@ -42,8 +42,8 @@ import { gunzipSync } from "node:zlib";
 const ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const TEST_ROOT = join(ROOT, "测试");
 const RUN_ROOT = join(TEST_ROOT, "运行产物");
-const EXPECTED_DESKTOP_VERSION = "0.2.0-rc.2";
-const EXPECTED_PLUGIN_VERSION = "0.2.0";
+const EXPECTED_DESKTOP_VERSION = "0.2.1-rc.2";
+const EXPECTED_PLUGIN_VERSION = "0.2.1";
 const EXPECTED_MODE_IDS = ["bash-wsl", "bash-git-bash"];
 const EXPECTED_MODE_NAMES = {
   "bash-wsl": "WSL 模式",
@@ -52,9 +52,9 @@ const EXPECTED_MODE_NAMES = {
 const OLD_CANONICAL_TGZ_SHA256 =
   "9cb01907dd7a9558255b6b8d5fe5ef03349927711fef0aadf9456656fe2b6f63";
 const EXPECTED_ASAR_SHA256 =
-  "983ca71114e6dfd353fc79af5a1f9481a250ee64c2a3c757673029b811b23bc2";
+  "47874618bf5b3011fcaac10cd4c85f69da333e70d4f99b921207c78d0999512a";
 const EXPECTED_EXE_SHA256 =
-  "df4e91fd91f6f1bee19a1990b0e167bfe06abf8353279d82bbb8e60edb6ba0d3";
+  "9c789407850773ce7d914a3ec0476852bf1ceea69789d8ccf4e39be953f4bf52";
 const MAX_LOG_CHARS = 16 * 1024;
 const CHILD_TIMEOUT_MS = 180_000;
 const INSTALL_TIMEOUT_MS = 180_000;
@@ -204,7 +204,15 @@ function desktopPaths() {
       "bin",
       "node.exe",
     ),
-    pnpm: join(resources, "runtime", "pnpm", "bin", "pnpm.mjs"),
+    pnpm: join(
+      resources,
+      "runtime",
+      "primary-runtime",
+      "dependencies",
+      "pnpm",
+      "bin",
+      "pnpm.mjs",
+    ),
   };
 }
 
@@ -343,9 +351,9 @@ function inspectTarball(tgz) {
   const peerVersions = manifest?.peerDependencies ?? {};
   const dependencies = manifest?.dependencies ?? {};
   const dependencyKeys = Object.keys(dependencies).sort();
-  const peerRangeOk = typeof peerVersions["@deepseek-ai/dsh"] === "string"
-    && /0\.2\.0-rc\.2/.test(peerVersions["@deepseek-ai/dsh"])
-    && /0\.2\.1-alpha\.1/.test(peerVersions["@deepseek-ai/dsh"]);
+  const peerRangeOk = manifest?.engines?.dsh === EXPECTED_DESKTOP_VERSION
+    && Object.entries(peerVersions).every(([name, version]) =>
+      version === (name === "@deepseek-ai/cordis" ? "4.0.5" : EXPECTED_DESKTOP_VERSION));
   const dependencyShapeOk = dependencyKeys.length === 1
     && dependencyKeys[0] === "@deepseek-ai/schemastery";
   const packageStatus = manifest?.name === "dsh-plugin-bash-wsl"
@@ -4605,7 +4613,16 @@ async function main() {
     writeFileSync(npmrc, "# test-owned isolated npm config; no credentials\n");
     writeProfile(profile, tgz, true, TEST_PERSISTENT_TIMEOUT_MS);
     const profileBeforeInstall = profileFilesSnapshot(profile);
-    const install = await runOwnedProcess(paths.node, [paths.pnpm, "install", "--offline", "--no-frozen-lockfile", "--ignore-scripts", "--config.auto-install-peers=false"], {
+    const install = await runOwnedProcess(paths.node, [
+      paths.pnpm,
+      "install",
+      "--no-frozen-lockfile",
+      "--ignore-scripts",
+      "--store-dir",
+      join(tempRoot, "pnpm-store"),
+      `--config.cacheDir=${join(tempRoot, "pnpm-cache")}`,
+      "--config.auto-install-peers=false",
+    ], {
       cwd: profile,
       env: { DSH_HOME: dshHome, COREPACK_ENABLE_PROJECT_SPEC: "0", NPM_CONFIG_USERCONFIG: npmrc, npm_config_userconfig: npmrc, NPM_CONFIG_OFFLINE: "true", npm_config_offline: "true", NPM_CONFIG_AUDIT: "false", npm_config_audit: "false", NPM_CONFIG_FUND: "false", npm_config_fund: "false", TEMP: logs, TMP: logs, TMPDIR: logs },
       stdoutPath: join(logs, "pnpm.stdout.log"),
@@ -4627,7 +4644,7 @@ async function main() {
         ? "installed profile dist bytes match the current source dist and candidate TGZ"
         : "installed profile dist bytes do not match the current source dist/candidate TGZ",
       installedDist);
-    addCheck(report, "desktop-profile-offline-install", installedOk ? "PASS" : "FAIL", installedOk ? "new TGZ installed into an isolated Desktop profile with bundled pnpm --offline" : "isolated Desktop profile install failed or installed the wrong plugin", { exitCode: install.code, signal: install.signal ?? null, timedOut: install.timedOut, closeObserved: install.closeObserved, reaped: install.reaped, error: install.error ?? null, stderr: sanitize(install.stderr, [[tempRoot, "<test-root>"]]) });
+    addCheck(report, "desktop-profile-offline-install", installedOk ? "PASS" : "FAIL", installedOk ? "new TGZ installed into an isolated Desktop profile with bundled pnpm and a test-owned store/cache" : "isolated Desktop profile install failed or installed the wrong plugin", { exitCode: install.code, signal: install.signal ?? null, timedOut: install.timedOut, closeObserved: install.closeObserved, reaped: install.reaped, error: install.error ?? null, stdout: sanitize(install.stdout, [[tempRoot, "<test-root>"]]), stderr: sanitize(install.stderr, [[tempRoot, "<test-root>"]]) });
     if (!installedOk) return report;
     const phases = [
       ["disabled-before", false, "disabled"],

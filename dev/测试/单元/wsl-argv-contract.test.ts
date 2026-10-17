@@ -83,7 +83,7 @@ function passingDoctorProbe() {
 function doctorOptions(): DoctorOptions {
   return {
     platform: "win32",
-    dshVersion: "0.2.0-rc.2",
+    dshVersion: "0.2.1-rc.2",
     wslExecutable: WSL_EXECUTABLE,
     distro: DISTRO,
     workspaceRoot: WORKSPACE_ROOT,

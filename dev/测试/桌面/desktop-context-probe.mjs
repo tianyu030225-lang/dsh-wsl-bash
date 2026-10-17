@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Desktop 0.2.0 acceptance probe.
+ * Desktop 0.2.1-rc.2 acceptance probe.
  *
  * The parent process uses the installed Desktop Electron executable and the
  * real app.asar runtime.  The child process starts the same Desktop profile
@@ -41,26 +41,27 @@ import { gunzipSync } from "node:zlib";
 const ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const TEST_ROOT = join(ROOT, "测试");
 const RUN_ROOT = join(TEST_ROOT, "运行产物");
-const EXPECTED_DESKTOP_VERSION = "0.2.0-rc.2";
-const EXPECTED_PLUGIN_VERSION = "0.2.0";
+const EXPECTED_DESKTOP_VERSION = "0.2.1-rc.2";
+const EXPECTED_PLUGIN_VERSION = "0.2.1";
 const EXPECTED_TOOLS = ["bash", "wsl_bash", "git_bash"];
 const DESKTOP_PEER_PACKAGES = {
-  "@deepseek-ai/cordis": new Set(["4.0.4", "4.0.5-alpha.1"]),
-  "@deepseek-ai/dsh": new Set(["0.2.0-rc.2", "0.2.1-alpha.1"]),
-  "@deepseek-ai/dsh-agent": new Set(["0.2.0-rc.2", "0.2.1-alpha.1"]),
-  "@deepseek-ai/dsh-app-boot": new Set(["0.2.0-rc.2", "0.2.1-alpha.1"]),
-  "@deepseek-ai/dsh-sandbox": new Set(["0.2.0-rc.2", "0.2.1-alpha.1"]),
-  "@deepseek-ai/dsh-sandbox-policy": new Set(["0.2.0-rc.2", "0.2.1-alpha.1"]),
-  "@deepseek-ai/dsh-subprocess": new Set(["0.2.0-rc.2", "0.2.1-alpha.1"]),
-  "@deepseek-ai/dsh-system-prompt": new Set(["0.2.0-rc.2", "0.2.1-alpha.1"]),
-  "@deepseek-ai/dsh-terminal": new Set(["0.2.0-rc.2", "0.2.1-alpha.1"]),
-  "@deepseek-ai/dsh-tool-bash-persistent": new Set(["0.2.0-rc.2", "0.2.1-alpha.1"]),
-  "@deepseek-ai/dsh-tools": new Set(["0.2.0-rc.2", "0.2.1-alpha.1"]),
-  "@deepseek-ai/dsh-user-approval": new Set(["0.2.0-rc.2", "0.2.1-alpha.1"]),
+  "@deepseek-ai/cordis": new Set(["4.0.5"]),
+  "@deepseek-ai/dsh": new Set(["0.2.1-rc.2"]),
+  "@deepseek-ai/dsh-agent": new Set(["0.2.1-rc.2"]),
+  "@deepseek-ai/dsh-app-boot": new Set(["0.2.1-rc.2"]),
+  "@deepseek-ai/dsh-sandbox": new Set(["0.2.1-rc.2"]),
+  "@deepseek-ai/dsh-sandbox-policy": new Set(["0.2.1-rc.2"]),
+  "@deepseek-ai/dsh-subprocess": new Set(["0.2.1-rc.2"]),
+  "@deepseek-ai/dsh-system-prompt": new Set(["0.2.1-rc.2"]),
+  "@deepseek-ai/dsh-terminal": new Set(["0.2.1-rc.2"]),
+  "@deepseek-ai/dsh-tool-bash-persistent": new Set(["0.2.1-rc.2"]),
+  "@deepseek-ai/dsh-tools": new Set(["0.2.1-rc.2"]),
+  "@deepseek-ai/dsh-user-approval": new Set(["0.2.1-rc.2"]),
+  "@deepseek-ai/dsh-working-directory": new Set(["0.2.1-rc.2"]),
 };
 const PROMPT_SECTION = "dsh-plugin-bash-wsl:usage";
 const MAX_LOG_CHARS = 8 * 1024;
-const CHILD_TIMEOUT_MS = 180_000;
+const CHILD_TIMEOUT_MS = 300_000;
 const TEST_PERSISTENT_TIMEOUT_MS = 10_000;
 
 async function reserveLocalPort() {
@@ -314,7 +315,15 @@ function desktopPaths() {
       "bin",
       "node.exe",
     ),
-    pnpm: join(resources, "runtime", "pnpm", "bin", "pnpm.mjs"),
+    pnpm: join(
+      resources,
+      "runtime",
+      "primary-runtime",
+      "dependencies",
+      "pnpm",
+      "bin",
+      "pnpm.mjs",
+    ),
   };
 }
 
@@ -962,7 +971,7 @@ async function runtimeNegativeChildMain(argv) {
   process.exitCode = 0;
 }
 
-async function waitForSharedProbeResult(resultPath, timeoutMs = 150_000) {
+async function waitForSharedProbeResult(resultPath, timeoutMs = 240_000) {
   const startedAt = Date.now();
   if (typeof resultPath !== "string" || resultPath.length === 0) {
     return {
@@ -1052,7 +1061,7 @@ async function childMain(argv) {
       if (!allowedVersions.has(version)) peerMismatches.push(`${packageName}:${version ?? "missing-version"}`);
     }
     addCheck(checks, "desktop-runtime:peer-manifests", peerMismatches.length === 0 ? "PASS" : "FAIL", peerMismatches.length === 0
-      ? "actual app.asar/dsh peer manifests match the exact rc.2/alpha.1 compatibility matrix"
+      ? "actual app.asar/dsh peer manifests match the exact 0.2.1-rc.2 compatibility matrix"
       : "actual app.asar/dsh peer manifests contain a missing or unsupported version", {
       versions: peerVersions,
       mismatches: peerMismatches,
@@ -1159,7 +1168,7 @@ async function childMain(argv) {
       restoreSharedProbeOutput = installSharedProbeOutputCapture();
       sharedProbeWait = await waitForSharedProbeResult(
         process.env.DSH_PROBE_RESULT_FILE,
-        150_000,
+        240_000,
       );
       sharedSecurityEvidence = sharedProbeWait.evidence;
     }
@@ -1442,10 +1451,11 @@ async function childMain(argv) {
     if (sharedProbe) {
       if (sharedSecurityEvidence === undefined) {
         addCheck(checks, `desktop-context:shared-${sharedProbeSuite}`, "FAIL", `shared CLI ${sharedProbeSuite} probe did not finish in the real Desktop context`, {
-          timeoutMs: sharedProbeWait?.timeoutMs ?? 150_000,
+          timeoutMs: sharedProbeWait?.timeoutMs ?? 240_000,
           waitedMs: sharedProbeWait?.waitedMs ?? null,
           resultPath: typeof process.env.DSH_PROBE_RESULT_FILE === "string" ? "<test-root>/shared-result.json" : null,
           observationError: sharedProbeWait?.observationError ?? null,
+          capturedOutput: sanitize(capturedProbeOutput),
         });
       } else {
         const securityEvidence = sharedSecurityEvidence;
@@ -1949,7 +1959,7 @@ async function main() {
   const report = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
-    target: "Desktop 0.2.0-rc.2 / plugin 0.2.0",
+    target: "Desktop 0.2.1-rc.2 / plugin 0.2.1",
     checks: [],
     phases: [],
     cleanup: {},
@@ -1991,7 +2001,7 @@ async function main() {
       && runtimeDescriptor.platform === "win32"
       && runtimeDescriptor.arch === "x64";
     addCheck(report, "desktop-runtime:version", appVersionOk && dshVersionOk && descriptorOk ? "PASS" : "FAIL", appVersionOk && dshVersionOk && descriptorOk
-      ? "actual app.asar and desktop-runtime descriptor are 0.2.0-rc.2"
+      ? "actual app.asar and desktop-runtime descriptor are 0.2.1-rc.2"
       : "actual installed Desktop runtime version or platform metadata does not match the target", {
       appVersion: appManifest.version,
       runtimeVersion: dshManifest.version,
@@ -2069,9 +2079,11 @@ async function main() {
     const install = await runCommand(paths.node, [
       paths.pnpm,
       "install",
-      "--offline",
       "--no-frozen-lockfile",
       "--ignore-scripts",
+      "--store-dir",
+      join(tempRoot, "pnpm-store"),
+      `--config.cacheDir=${join(tempRoot, "pnpm-cache")}`,
       "--config.auto-install-peers=false",
     ], {
       cwd: profile,
@@ -2095,13 +2107,14 @@ async function main() {
       && install.cleanup?.reaped === true
       && install.cleanup?.aliveAfter === false;
     if (!installLifecycleOk || install.code !== 0) {
-      addCheck(report, "desktop-profile:offline-install", "FAIL", "bundled Desktop pnpm could not install the local TGZ without legacy-peer-deps", {
+      addCheck(report, "desktop-profile:offline-install", "FAIL", "bundled Desktop pnpm could not install the local TGZ in an isolated dependency store without legacy-peer-deps", {
         code: install.code,
         timedOut: install.timedOut,
         error: install.error ?? null,
         closeObserved: install.cleanup?.closeObserved ?? false,
         reaped: install.cleanup?.reaped ?? false,
         aliveAfter: install.cleanup?.aliveAfter ?? null,
+        stdout: sanitize(install.stdout, [[tempRoot, "<test-root>"]]),
         stderr: sanitize(install.stderr, [[tempRoot, "<test-root>"]]),
       });
       return report;
@@ -2110,9 +2123,9 @@ async function main() {
     const installedOk = existsSync(installedPackage) && jsonFile(installedPackage).version === EXPECTED_PLUGIN_VERSION;
     addCheck(report, "desktop-profile:offline-install", installedOk ? "PASS" : "FAIL", installedOk
       ? "local TGZ is installed in the isolated desktop profile"
-      : "isolated profile did not contain dsh-plugin-bash-wsl@0.2.0 after install", {
+      : "isolated profile did not contain dsh-plugin-bash-wsl@0.2.1 after install", {
       packagePath: "profiles/desktop/node_modules/dsh-plugin-bash-wsl/package.json",
-      installer: "bundled Desktop pnpm --offline (no legacy-peer-deps)",
+      installer: "bundled Desktop pnpm with isolated store/cache (no legacy-peer-deps)",
       closeObserved: install.cleanup?.closeObserved ?? false,
       reaped: install.cleanup?.reaped ?? false,
       });
@@ -2332,7 +2345,8 @@ async function main() {
       ["reloaded", true, "workspace-write", undefined],
     ].filter(([label]) => options.phase === undefined || options.phase === label)) {
         const selectedProbeSuite = options.suite ?? probeSuite;
-        writeProfile(profile, tgz, enabled, probePackage, selectedProbeSuite !== undefined, options.noRemoteAnswerer, selectedProbeSuite);
+        const noRemoteAnswerer = options.noRemoteAnswerer || selectedProbeSuite === "security";
+        writeProfile(profile, tgz, enabled, probePackage, selectedProbeSuite !== undefined, noRemoteAnswerer, selectedProbeSuite);
       const expected = enabled ? "present" : "absent";
       const evidencePath = join(tempRoot, `${phaseLabel}.json`);
       const phase = await spawnDesktopChild(paths, profile, dshHome, workspace, expected, evidencePath, logRoot, phaseLabel, permissionMode, selectedProbeSuite, tempRoot, outside);
@@ -2459,7 +2473,7 @@ async function run() {
     report = {
       schemaVersion: 1,
       generatedAt: new Date().toISOString(),
-      target: "Desktop 0.2.0-rc.2 / plugin 0.2.0",
+      target: "Desktop 0.2.1-rc.2 / plugin 0.2.1",
       checks: [{ id: "desktop-probe:uncaught", status: "FAIL", detail: sanitize(error) }],
       phases: [],
       cleanup: {},

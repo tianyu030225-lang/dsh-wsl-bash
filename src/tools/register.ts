@@ -3,6 +3,8 @@ import { ESCALATION_TARGETS } from "@deepseek-ai/dsh-sandbox";
 import type { SandboxExecutionPolicy, SandboxMode } from "@deepseek-ai/dsh-sandbox";
 import type { SubprocessRuntime } from "@deepseek-ai/dsh-subprocess";
 import { defineTool, type ToolRunContext } from "@deepseek-ai/dsh-tools";
+import type {} from "@deepseek-ai/dsh-working-directory";
+import { isAbsolute, win32 } from "node:path";
 
 import {
   executeGitBash,
@@ -203,6 +205,22 @@ function subprocessOf(ctx: Context): SubprocessRuntime {
   return subprocess;
 }
 
+/** Resolve an optional per-call override against the latest Session directory. */
+async function currentWorkdir(
+  ctx: Context,
+  exec: ToolRunContext,
+  requested: string | undefined,
+): Promise<string | undefined> {
+  const current = exec.agent === undefined
+    ? undefined
+    : await ctx.workingDirectory.ensure(exec.agent, exec.signal);
+  if (requested === undefined || requested.trim().length === 0) return current;
+  if (current !== undefined && !isAbsolute(requested) && !win32.isAbsolute(requested)) {
+    return win32.resolve(current, requested);
+  }
+  return requested;
+}
+
 function toolDescription(name: string): string {
   return name === WSL_BASH_TOOL_NAME
     ? "Execute one clean Bash command in the configured Ubuntu WSL distribution."
@@ -227,8 +245,10 @@ export function registerOneShotTools(
     },
     async execute(args, exec) {
       const standingPolicy = resolvePolicy(ctx, exec);
+      const workdir = await currentWorkdir(ctx, exec, args.workdir);
       const executionArgs = {
         ...args,
+        ...(workdir === undefined ? {} : { workdir }),
         timeoutMs: args.timeoutMs ?? config.oneShotTimeoutMs,
       } as WslBashArgs;
       const result = await executeWslBash(executionArgs, {
@@ -268,8 +288,10 @@ export function registerOneShotTools(
       if (typeof standingPolicy.workspaceRoot !== "string" || standingPolicy.workspaceRoot.length === 0) {
         throw new Error("git_bash: execution requires immutable sandboxPolicy.workspaceRoot");
       }
+      const workdir = await currentWorkdir(ctx, exec, args.workdir);
       const executionArgs = {
         ...args,
+        ...(workdir === undefined ? {} : { workdir }),
         timeoutMs: args.timeoutMs ?? config.oneShotTimeoutMs,
       } as GitBashArgs;
       const result = await executeGitBash(executionArgs, {

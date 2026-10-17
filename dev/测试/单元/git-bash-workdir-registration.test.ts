@@ -44,6 +44,7 @@ function subprocessHandle() {
 function registerGitTool(
   policy: Record<string, unknown>,
   spawn = vi.fn((..._args: unknown[]) => subprocessHandle()),
+  currentDirectory = String(policy.workspaceRoot ?? "C:\\fixture"),
 ) {
   const services: Record<string, unknown> = {
     sandboxPolicy: { resolve: vi.fn(() => policy) },
@@ -54,6 +55,7 @@ function registerGitTool(
   const ctx = {
     get: vi.fn((name: string) => services[name]),
     tools: { register },
+    workingDirectory: { ensure: vi.fn(async () => currentDirectory) },
   } as any;
   registerOneShotTools(ctx, resolveConfig());
   const gitBash = register.mock.calls
@@ -138,6 +140,30 @@ describe("registered git_bash workspace-root working directory contract", () => 
       cwd: expectedCwd,
     });
     expect(resolveGitBashPath).toHaveBeenCalled();
+  });
+
+  it("resolves a relative workdir from the latest Session directory", async () => {
+    const root = "C:\\Users\\Alice\\work\\dsh_bash";
+    const current = `${root}\\current`;
+    const execution = registerGitTool({
+      mode: "danger-full-access",
+      workspaceRoot: root,
+    }, undefined, current);
+
+    await execution.gitBash.execute({
+      command: "printf ok",
+      description: "current directory contract",
+      workdir: "nested",
+    }, {
+      agent: { id: "agent-a" },
+      callId: "git-current-workdir",
+      signal: new AbortController().signal,
+    });
+
+    expect(execution.ctx.workingDirectory.ensure).toHaveBeenCalledTimes(1);
+    expect(execution.spawn.mock.calls[0]?.[0]).toMatchObject({
+      cwd: `${current}\\nested`,
+    });
   });
 
   it.each([

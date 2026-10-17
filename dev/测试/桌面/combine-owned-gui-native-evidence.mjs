@@ -55,7 +55,7 @@ function assertCompatible(summaries, gitQualification = undefined) {
     if (summary.schemaVersion !== 2 || summary.mode !== "real-turn"
       || (summary.status !== "PASS" && !isQualifiedGitFail)
       || summary.fixture !== "gui-human-canonical-20261010-2340"
-      || summary.runtime !== "DeepSeek Harness Desktop 0.2.0-rc.2"
+      || summary.runtime !== "DeepSeek Harness Desktop 0.2.1-rc.2"
       || !Array.isArray(summary.nativeModes) || summary.nativeModes.length !== 1) {
       throw new Error("each input must be one PASS real-turn native driver result");
     }

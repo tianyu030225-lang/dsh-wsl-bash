@@ -774,6 +774,11 @@ test("the Windows wrapper keeps driver stdout detached and durable", () => {
   assert.match(driverSource, /buildSessionTitle\(ATTEMPT_ID, summary\.sessionIdSha256(?:, SESSION_PRESET)?\)/);
   assert.match(driverSource, /lineageInitial/);
   assert.match(driverSource, /lineageBeforeTerminate/);
+    assert.ok(
+      driverSource.indexOf("summary.cleanup.lineageBeforeTerminate = await queryOwnedLineage")
+        < driverSource.indexOf("const observation = await observeOwnedChild"),
+      "native prepositive lineage must be captured before waiting for normal GUI close",
+    );
   assert.match(driverSource, /backendCleanupEvidence/);
   assert.match(driverSource, /owned Windows CIM Win32_Process CreationDate lineage/);
   assert.match(driverSource, /SESSION_PRESET !== "bash-git-bash"/);

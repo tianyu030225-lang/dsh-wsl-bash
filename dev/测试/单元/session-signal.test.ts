@@ -39,7 +39,7 @@ function livePipeTransport() {
 }
 
 describe("persistent WSL signal and PID boundary", () => {
-  function adapterFixture(stdin: Writable) {
+    function adapterFixture(stdin: Writable) {
     const stdout = new PassThrough();
     const stderr = new PassThrough();
     let resolveDone!: (value: { exitCode: number | null; signal: NodeJS.Signals | null }) => void;
@@ -61,7 +61,7 @@ describe("persistent WSL signal and PID boundary", () => {
       terminate,
       waitForExit: vi.fn(async () => true),
     };
-    return { adapter: new WslPtyTransportAdapter(handle), stdin, terminate };
+      return { adapter: new WslPtyTransportAdapter(handle), stdin, stdout, stderr, resolveDone, terminate };
   }
 
   it("rejects a true-returning write whose callback later reports EPIPE", async () => {
@@ -91,6 +91,26 @@ describe("persistent WSL signal and PID boundary", () => {
     await expect(outputError).resolves.toMatchObject({ message: "late EPIPE" });
     await fixture.adapter.terminate();
   });
+
+    it("allows stdin to close immediately before a normal managed-child exit", async () => {
+      const stdin = new PassThrough();
+      const fixture = adapterFixture(stdin);
+      const outputErrors: Error[] = [];
+      fixture.adapter.output.on("error", (error) => outputErrors.push(error));
+      const outputEnded = new Promise<void>((resolve) => fixture.adapter.output.once("end", resolve));
+      fixture.adapter.output.resume();
+
+      stdin.destroy();
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      fixture.stdout.end();
+      fixture.stderr.end();
+      fixture.resolveDone({ exitCode: 0, signal: null });
+
+      await expect(fixture.adapter.done).resolves.toEqual({ exitCode: 0, signal: null });
+      await outputEnded;
+      expect(outputErrors).toEqual([]);
+      await expect(fixture.adapter.write("after exit")).rejects.toThrow(/unavailable/i);
+    });
 
   it("rejects a registry signal before side effects when no Linux PGID is verified", async () => {
     const pipe = livePipeTransport();

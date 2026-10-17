@@ -215,7 +215,7 @@ function createFixture(mutate, mutateEvidence, tarballPath = TARBALL, mutateAfte
     mode: "real-turn",
     status: "PASS",
     fixture: "gui-human-canonical-20261010-2340",
-    runtime: "DeepSeek Harness Desktop 0.2.0-rc.2",
+    runtime: "DeepSeek Harness Desktop 0.2.1-rc.2",
     tgzSha256: fixtureTgzSha256,
     appAsarSha256: fakeAsarSha256,
     sessionIdSha256,

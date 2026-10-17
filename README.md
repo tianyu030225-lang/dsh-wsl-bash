@@ -1,28 +1,28 @@
-# dsh-plugin-bash-wsl 0.2.0
+# dsh-plugin-bash-wsl 0.2.1
 
 [简体中文](README.zh-CN.md)
 
-Native Git Bash and WSL backends for DSH on Windows. Plugin `0.2.0` targets Desktop `0.2.0-rc.2` and CLI `0.2.1-alpha.1` with one shared package. It keeps the existing `pwsh` tool and adds two Web/Desktop modes:
+Native Git Bash and WSL backends for DSH on Windows. Plugin `0.2.1` targets Desktop and CLI `0.2.1-rc.2` with one shared package. It keeps the existing `pwsh` tool and adds two Web/Desktop modes:
 
 - **WSL 模式** (`bash-wsl`): Standard capabilities with an agent-owned persistent WSL `bash`;
 - **Git Bash 模式** (`bash-git-bash`): Standard capabilities with an agent-owned persistent native Git Bash `bash`, requiring explicit full access for the session.
 
 Both modes retain one-shot `wsl_bash`, `git_bash`, and the official `pwsh`. They use the running host's shipped Standard template; they do not replace the stock modes or change the selected default. User customizations to the stock Standard preset are not automatically copied. The headless CLI keeps persistent WSL by default; mode-dropdown selection is a Web/Desktop feature.
 
-The package targets Node.js `>=22` and accepts only those two DSH versions. Older DSH versions are not supported by this release; use the documentation at the appropriate historical tag instead. GitHub source publication and npm registry publication are separate steps. An npm release is not currently announced; do not assume that this package name or an unpinned `latest` installs this source.
+The package targets Node.js `>=22` and accepts only DSH `0.2.1-rc.2`. Older DSH versions are not supported by this release; use the documentation at the appropriate historical tag instead. GitHub source publication and npm registry publication are separate steps. An npm release is not currently announced; do not assume that this package name or an unpinned `latest` installs this source.
 
-The default branch, `master`, is a single `0.2.0` release-source snapshot. Historical versions remain available through repository tags; this page documents only `0.2.0`.
+The default branch documents the current `0.2.1` release source. Historical versions remain available through repository tags; use tag `v0.2.0` for the preceding release and `v0.1.0` only for DSH `0.1.0-rc.6`.
 
-Public regression sources, smoke scripts and fixtures are grouped under [`dev/测试/`](dev/测试/). Historical test artifacts stay in the ignored root `测试/运行产物/`; they are not included in Git or npm packages. This directory reorganization has not been verified by a new test run, build or release gate.
+Public regression sources, smoke scripts and fixtures are grouped under [`dev/测试/`](dev/测试/). Historical test artifacts stay in the ignored root `测试/运行产物/`; they are not included in Git or npm packages. The `0.2.1` report records the new test run, build and release gate; older reports certify only their named historical artifacts.
 
-## 0.2.0 compatibility and release evidence
+## 0.2.1 compatibility and release evidence
 
 | Host | Supported DSH version |
 | --- | --- |
-| Desktop | `0.2.0-rc.2` |
-| CLI | `0.2.1-alpha.1` |
+| Desktop | `0.2.1-rc.2` |
+| CLI | `0.2.1-rc.2` |
 
-The [0.2.0 dual-host report](https://github.com/tianyu030225-lang/dsh-wsl-bash/blob/master/docs/testing-report-0.2.0.md) records a frozen historical candidate, identified by its complete SHA-256. This source also contains later prompt and documentation revisions; the historical PASS does not certify every later revision or repack. A package filename or version number alone is not proof that it is that candidate. Build from the source revision you intend to install, or use an explicitly published release asset with its own checksum.
+The `0.2.1` release report is generated for one frozen candidate and identifies it by complete SHA-256. The [0.2.0 dual-host report](docs/testing-report-0.2.0.md) remains historical evidence for `v0.2.0` only. A package filename or version number alone is not proof that it is a tested candidate. Build from the source revision you intend to install, or use an explicitly published release asset with its own checksum.
 
 > **Unofficial community project.** This plugin is an independent, community-maintained extension and is **not affiliated with, endorsed by, or sponsored by DeepSeek**. "DeepSeek Harness" and "DSH" are trademarks of their respective owners. The plugin uses public DSH services and official packages; any plugin defect or behavior change is the responsibility of this repository, not DeepSeek or DSH.
 
@@ -32,6 +32,8 @@ The default mode is `workspace-write`. Restricted WSL takes its writable workspa
 
 Restricted WSL modes (`read-only` and `workspace-write`) mask the `/run` Windows interop broker and unset `WSL_INTEROP`/`WSLENV`, so WSL cannot launch Windows `.exe` programs such as `cmd.exe` through that broker. `danger-full-access` intentionally retains host interop as part of its explicit opt-in. This is a targeted Windows-interop boundary, not general IPC or service isolation; reachable local services and network paths can still perform writes when the host permits them.
 
+All WSL Bash entry points clear inherited Bash startup-control variables before Bash can read them, then establish a trusted `/bin/bash` shell identity inside the sandbox. A user or parent-process `BASH_ENV`, `ENV`, `SHELLOPTS`, or `BASHOPTS` cannot run code ahead of the sandbox checks.
+
 Git Bash restricted mode is fail-closed: a denied command starts zero processes. A one-shot command runs only in `danger-full-access`, or after the host approval flow grants one exact retry. Persistent Git Bash instead requires standing `danger-full-access` for the session; a one-shot approval cannot authorize it. Selecting Git Bash mode never changes permissions. A persistent session is never upgraded in place. The plugin does not provide network isolation; commands can reach the network when the host/backend permits it. `doctor` is read-only and never installs dependencies.
 
 Persistent Git Bash commands execute in native Git Bash, not through PowerShell or WSL. A small host-runtime helper groups terminal and background-process cleanup under Windows Job lifetime ownership; this is not a file sandbox. Missing required host libraries or Job support stops startup instead of falling back to an unmanaged native terminal.
@@ -40,7 +42,7 @@ Persistent Git Bash commands execute in native Git Bash, not through PowerShell 
 
 - Windows with Git Bash and WSL installed;
 - Node.js `>=22`;
-- Desktop DSH `0.2.0-rc.2` or CLI DSH `0.2.1-alpha.1`;
+- Desktop or CLI DSH `0.2.1-rc.2`;
 - for every WSL mode: `bwrap`, `script`, and `realpath` inside the selected WSL distribution;
 - for Windows integration tests: a working Git Bash executable and `wsl.exe`.
 
@@ -52,7 +54,7 @@ The default distribution is `Ubuntu`. The plugin starts clean WSL shells (`--nop
 
 Git does not contain `dist/` or generated TGZ files. A GitHub source ZIP is not an installable DSH plugin tarball, and an old same-named TGZ left in a checkout must not be reused as the successor release.
 
-For the `0.2.0` source, use Windows Node.js `>=22` and `pnpm@11.21.0` as declared in `package.json`. Clone this repository and select the intended source revision before installing dependencies. From that checkout, the following Windows PowerShell commands create a separate package output directory:
+For the `0.2.1` source, use Windows Node.js `>=22` and `pnpm@11.21.0` as declared in `package.json`. Clone this repository and select the intended source revision before installing dependencies. From that checkout, the following Windows PowerShell commands create a separate package output directory:
 
 ```powershell
 pnpm install --frozen-lockfile
@@ -60,7 +62,9 @@ New-Item -ItemType Directory -Force -Path ".packages" | Out-Null
 pnpm pack --pack-destination ".packages"
 ```
 
-The existing `prepack` script runs `pnpm run build`, cleaning and rebuilding only this checkout's `dist/`. Do not omit development dependencies when building from source. The resulting `0.2.0` tarball is `.packages/dsh-plugin-bash-wsl-0.2.0.tgz`; retain its checksum with any release. These are build instructions, not a claim that a newly generated package has passed the historical release gate.
+The existing `prepack` script runs `pnpm run build`, cleaning and rebuilding only this checkout's `dist/`. Do not omit development dependencies when building from source. The resulting `0.2.1` tarball is `.packages/dsh-plugin-bash-wsl-0.2.1.tgz`; retain its checksum with any release. These are build instructions, not a claim that a newly generated package has passed the release gate.
+
+A `file:` or hoisted local install is a deployed copy or hardlink; a clean rebuild of this checkout can leave the profile's installed inode unchanged. Rebuilding or restarting alone is therefore not update proof. Reinstall the new TGZ into the exact target or isolated profile, confirm the runtime `installAnchor`, and compare the installed `dist` hashes with this build. A `link:` install is suitable only for explicitly verified local development and is never release evidence.
 
 WSL may be the development shell, but Windows DSH remains the target: invoke Windows Node/package-manager tooling when working through WSL, keep the checkout and output on the Windows drive, and do not install DSH into WSL for this plugin. Direct Git-URL installation is not documented as supported; use the built tarball instead. Installing dependencies with `npm install` alone does not build or register the plugin in a DSH profile.
 
@@ -70,7 +74,7 @@ Back up the target profile's manifest, lockfile and this plugin before replaceme
 
 ```powershell
 Get-Command dsh
-dsh plugin --profile web add "C:\work\dsh-wsl-bash\.packages\dsh-plugin-bash-wsl-0.2.0.tgz"
+dsh plugin --profile web add "C:\work\dsh-wsl-bash\.packages\dsh-plugin-bash-wsl-0.2.1.tgz"
 ```
 
 Confirm that `Get-Command dsh` resolves the Windows installation. This command targets its `web` profile. Desktop owns a separate `desktop` profile: open **Settings → Plugins → Add Plugin** and select the same tarball there. Installing into `web` does not install into Desktop. Restart the relevant host and create a new conversation after installation. The package metadata loads `cordis.patch.yml`; keep the existing PowerShell bundle. A minimal isolated headless profile fragment is:
@@ -110,7 +114,7 @@ After installation and restart, select **WSL 模式** or **Git Bash 模式** whe
 
 One-shot `wsl_bash` and `git_bash` calls require `command` and `description`; `description` is for UI/logs and does not affect execution. The persistent `bash` tool requires only `command` and keeps owner-scoped state.
 
-For `wsl_bash`, `workdir` may be relative, a Windows drive path, or its equivalent `/mnt/<drive>/...` path. All spellings must resolve inside the same host-provided workspace; symlink or junction escapes are rejected.
+For `wsl_bash`, `workdir` may be relative, a Windows drive path, or the selected distribution's equivalent Linux path. Production mapping is resolved by that distribution's real `wslpath` and `realpath`, so a configured automount root need not be `/mnt`. All spellings must resolve inside the same host-provided workspace; symlink or junction escapes are rejected.
 
 For `git_bash`, an omitted `workdir` defaults to the trusted agent workspace and relative paths resolve from it, not the DSH process directory. Explicit Windows paths still pass the existing path guards.
 
@@ -193,7 +197,7 @@ For Desktop, remove it through the Desktop plugin manager instead; do not substi
 
 | Symptom | Check |
 | --- | --- |
-| Plugin does not load | Confirm plugin `0.2.0`, Node `>=22`, and an actual host version of `0.2.0-rc.2` or `0.2.1-alpha.1`. Do not grant a version exemption to bypass the check. |
+| Plugin does not load | Confirm plugin `0.2.1`, Node `>=22`, and an actual host version of `0.2.1-rc.2`. Do not grant a version exemption to bypass the check. |
 | Works in CLI but absent in Desktop | `web` and `desktop` are separate profiles. Check the profile that the actual host loaded and restart it after installation. |
 | `workspace-write` is unavailable | Run `doctor`; install `bwrap`/`script` through the host's normal system procedure, then restart DSH. The plugin intentionally does not fall back to unrestricted execution. |
 | Path with spaces or Chinese characters fails | One-shot tools accept `workdir`; persistent `bash` accepts only `command`, so use a correctly quoted `cd` there. Respect the applicable workspace boundary. |

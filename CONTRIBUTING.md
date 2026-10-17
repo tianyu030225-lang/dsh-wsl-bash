@@ -1,6 +1,6 @@
 # Contributing
 
-Plugin `0.2.0` contributions target Desktop DSH `0.2.0-rc.2` and CLI `0.2.1-alpha.1`, Node.js `>=22`, and the fail-closed security model. Keep plugin `0.1.0` for old DSH `0.1.0-rc.6`; do not add a legacy branch to the new runtime.
+Plugin `0.2.1` contributions target Desktop and CLI DSH `0.2.1-rc.2`, Node.js `>=22`, and the fail-closed security model. Keep plugin `0.2.0` for DSH `0.2.0-rc.2`/`0.2.1-alpha.1` and plugin `0.1.0` for old DSH `0.1.0-rc.6`; do not add legacy branches to the new runtime.
 
 This is one repository's next version, not separate CLI and Desktop packages. For a clean source checkout, follow the build/package steps in `README.md` with Windows Node and the declared `pnpm@11.21.0`; package creation runs the existing build hook and is not an npm publication. The npm package intentionally omits `src`; inspect the matching Git source revision when debugging source/declaration-map references.
 
