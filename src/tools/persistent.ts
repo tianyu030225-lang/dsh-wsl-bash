@@ -45,7 +45,19 @@ const PAGE_LINES = 1000;
 const MAX_FALLBACK_BYTES = 262_144;
 
 function quoteForBash(value: string): string {
-  return "$'" + value.replaceAll("\\", "\\\\").replaceAll("'", "\\'").replaceAll("\r", "\\r").replaceAll("\n", "\\n") + "'";
+  if (value.includes("\0")) throw new Error("persistent Bash command must not contain NUL bytes");
+  let encoded = "";
+  for (const character of value) {
+    const code = character.codePointAt(0)!;
+    if (character === "\\") encoded += "\\\\";
+    else if (character === "'") encoded += "\\'";
+    else if (character === "\n") encoded += "\\n";
+    else if (character === "\r") encoded += "\\r";
+    else if (character === "\t") encoded += "\\t";
+    else if (code < 0x20 || code === 0x7f) encoded += `\\x${code.toString(16).padStart(2, "0")}`;
+    else encoded += character;
+  }
+  return "$'" + encoded + "'";
 }
 
 function commandOutput(snapshot: Snapshot, marker: Markers): Capture | undefined {
@@ -59,7 +71,7 @@ function commandOutput(snapshot: Snapshot, marker: Markers): Capture | undefined
   const start = startMarker < 0 ? 0 : startMarker + marker.start.length;
   return {
     text: snapshot.text.slice(start, end).replace(/^\r?\n/, "").replace(/(?:\r?\n)+$/, ""),
-    incomplete: startMarker < 0,
+    incomplete: snapshot.truncated || startMarker < 0,
     exitCode,
   };
 }
@@ -76,7 +88,7 @@ function partialOutput(snapshot: Snapshot, marker: Markers, fallback: Snapshot):
   const start = snapshot.text.lastIndexOf(marker.start);
   if (start >= 0) return {
     text: snapshot.text.slice(start + marker.start.length).replace(/^\r?\n/, "").replace(/(?:\r?\n)+$/, ""),
-    incomplete: false,
+    incomplete: snapshot.truncated,
   };
   const fallbackStart = fallback.text.lastIndexOf(marker.start);
   const afterStart = fallbackStart < 0 ? fallback.text : fallback.text.slice(fallbackStart + marker.start.length).replace(/^\r?\n/, "");
@@ -185,6 +197,7 @@ export async function apply(ctx: Context, config: Partial<PersistentConfig> = {}
     return tracked;
   };
   const execute = async (owner: Owner, command: string, upstream: AbortSignal): Promise<string> => {
+      if (command.includes("\0")) throw new Error("persistent Bash command must not contain NUL bytes");
     const commandDeadline = timeouts.deadline(upstream, resolved.timeoutMs, TIMEOUT_CODE);
     let cancellationCleanup: Promise<void> | undefined;
     const onCancellation = (): void => {

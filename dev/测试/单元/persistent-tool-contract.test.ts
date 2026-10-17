@@ -18,7 +18,7 @@ type RegisteredTool = {
   name: string;
   execute(args: unknown, exec: unknown): Promise<unknown>;
 };
-type FixtureMode = "normal" | "segmented" | "prefix" | "large" | "fallback" | "deadline";
+type FixtureMode = "normal" | "segmented" | "prefix" | "large" | "fallback" | "deadline" | "truncated";
 
 const START_MARKER = "__DSH_PERSISTENT_BASH_START_";
 const END_MARKER = "__DSH_PERSISTENT_BASH_END_";
@@ -150,9 +150,9 @@ function makeToolFixture(mode: FixtureMode) {
         viewport,
         waitReason: "inferred_idle",
         sessionStatus: { kind: "running" },
-        truncated: false,
+          truncated: mode === "truncated",
       }),
-      readOutput: () => ({ delta, truncated: false }),
+        readOutput: () => ({ delta, truncated: mode === "truncated" }),
       cancel: () => false,
     };
   });
@@ -161,7 +161,7 @@ function makeToolFixture(mode: FixtureMode) {
     totalLines: 1000,
     lineBegin: 0,
     lineEnd: 1000,
-    truncated: false,
+      truncated: mode === "truncated",
   };
   let registered: RegisteredTool | undefined;
   const contextEffect = vi.fn((factory: () => unknown) => {
@@ -200,15 +200,16 @@ function makeToolFixture(mode: FixtureMode) {
 async function executeFixture(
   fixture: ReturnType<typeof makeToolFixture>,
   callId: string,
+  command = "printf 'fixture'",
 ): Promise<unknown> {
   const tool = fixture.registered();
   expect(tool?.name).toBe("bash");
   return tool!.execute(
-    { command: "printf 'fixture'" },
+      { command },
     {
       callId,
       name: "bash",
-      arguments: { command: "printf 'fixture'" },
+        arguments: { command },
       signal: new AbortController().signal,
       agent: fixture.owner,
       token: Symbol("tool-token"),
@@ -226,6 +227,37 @@ const CONFIG = {
 };
 
 describe("persistent bash tool completion and deadline contracts", () => {
+  it("encodes terminal control bytes before sending the interactive wrapper", async () => {
+    const fixture = makeToolFixture("normal");
+    await applyCandidate(fixture.ctx as any, CONFIG);
+    await executeFixture(fixture, "control-bytes", "printf '<%s>' $'a\tb\x1bc\x7f'");
+
+    const request = fixture.startSend.mock.calls
+      .map(([, , value]) => value as { text: string })
+      .find((value) => value.text !== "stty -echo");
+    expect(request).toBeDefined();
+    expect(request?.text).not.toContain("\t");
+    expect(request?.text).not.toContain("\x1b");
+    expect(request?.text).not.toContain("\x7f");
+    expect(request?.text).toContain("\\t");
+    expect(request?.text).toContain("\\x1b");
+    expect(request?.text).toContain("\\x7f");
+  });
+
+  it("rejects NUL before creating a persistent shell", async () => {
+    const fixture = makeToolFixture("normal");
+    await applyCandidate(fixture.ctx as any, CONFIG);
+    await expect(executeFixture(fixture, "nul", "printf 'bad\0command'")).rejects.toThrow(/NUL/);
+    expect(fixture.ctx.terminals.spawn).not.toHaveBeenCalled();
+  });
+
+  it("marks a command capture incomplete when every source reports a gap", async () => {
+    const fixture = makeToolFixture("truncated");
+    await applyCandidate(fixture.ctx as any, CONFIG);
+    const output = await executeFixture(fixture, "truncated-output");
+    expect(String(output)).toContain("The beginning of this command output was dropped");
+  });
+
   it("candidate resolves a normal inferred_idle operation from incremental END", async () => {
     const fixture = makeToolFixture("normal");
     await (applyCandidate as unknown as (ctx: unknown, config: unknown) => Promise<void>)

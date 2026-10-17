@@ -9,7 +9,7 @@ export interface OneShotRenderable {
   timeoutMs: number;
   stdout: Pick<CapturedOutput, "text" | "truncated" | "spillPath" | "overflowed">;
   stderr: Pick<CapturedOutput, "text" | "truncated" | "spillPath" | "overflowed">;
-  failure?: { kind: string; message: string } | undefined;
+  failure?: { kind: string; message: string; code?: string | number } | undefined;
   sandbox?: {
     mode: SandboxMode;
     enforcement: "bwrap" | "none";
@@ -38,6 +38,14 @@ export function renderOneShotResult(result: OneShotRenderable): string {
     markers.push(`[sandbox: unavailable — ${result.failure.message}]`);
   } else if (result.failure?.kind === "sandbox-denied" && !result.sandbox?.denied) {
     markers.push(`[sandbox: request denied — ${result.failure.message}]`);
+    } else if (
+      result.failure !== undefined &&
+      !(result.failure.kind === "runner-failure" && result.sandbox?.runnerFailed) &&
+      !(result.failure.kind === "timeout" && result.timedOut) &&
+      !(result.failure.kind === "aborted" && result.aborted)
+    ) {
+      const code = result.failure.code === undefined ? "" : `; code ${result.failure.code}`;
+      markers.push(`[failure: ${result.failure.kind} — ${result.failure.message}${code}]`);
   }
   if (result.aborted) markers.push("[aborted]");
   if (result.timedOut) markers.push(`[timed out after ${result.timeoutMs}ms]`);

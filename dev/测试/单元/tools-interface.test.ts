@@ -72,6 +72,14 @@ describe("0.2 tool registration and fail-closed execution", () => {
         type: "string",
         const: "foreground",
       });
+        expect(tool.output.schema.properties?.failure).toMatchObject({
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            kind: { type: "string" },
+            message: { type: "string" },
+          },
+        });
     }
   });
 

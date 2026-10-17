@@ -103,28 +103,52 @@ async function writePipe(stdin: Writable | undefined, data: string): Promise<voi
   if (stdin === undefined || stdin.destroyed || stdin.writableEnded) {
     throw new Error("dsh-plugin-bash-wsl: subprocess stdin pipe is unavailable");
   }
-  if (stdin.write(data)) return;
   await new Promise<void>((resolve, reject) => {
+    let callbackDone = false;
+    let drainDone = false;
+    let settled = false;
     const cleanup = (): void => {
       stdin.off("drain", onDrain);
       stdin.off("error", onError);
       stdin.off("close", onClose);
     };
-    const onDrain = (): void => {
+    const finish = (error?: Error): void => {
+      if (settled) return;
+      settled = true;
       cleanup();
-      resolve();
+      if (error === undefined) resolve();
+      else reject(error);
+    };
+    const maybeFinish = (): void => {
+      if (callbackDone && drainDone) finish();
+    };
+    const onDrain = (): void => {
+      drainDone = true;
+      maybeFinish();
     };
     const onError = (error: unknown): void => {
-      cleanup();
-      reject(asError(error));
+      finish(asError(error));
     };
     const onClose = (): void => {
-      cleanup();
-      reject(new Error("dsh-plugin-bash-wsl: subprocess stdin closed while writing"));
+      finish(new Error("dsh-plugin-bash-wsl: subprocess stdin closed while writing"));
     };
-    stdin.once("drain", onDrain);
     stdin.once("error", onError);
     stdin.once("close", onClose);
+    try {
+      const accepted = stdin.write(data, (error?: Error | null) => {
+        if (error != null) {
+          finish(asError(error));
+          return;
+        }
+        callbackDone = true;
+        maybeFinish();
+      });
+      drainDone = accepted;
+      if (!accepted) stdin.once("drain", onDrain);
+      maybeFinish();
+    } catch (error) {
+      finish(asError(error));
+    }
   });
 }
 
@@ -146,6 +170,8 @@ export class WslPtyTransportAdapter implements WslPtyTransport {
 
   private readonly sources: Readable[];
   private readonly listeners = new Map<Readable, SourceListeners>();
+  private readonly stdinError: (error: unknown) => void;
+  private readonly stdinClose: () => void;
   private endedSources = 0;
   private processDone = false;
   private outputFinished = false;
@@ -160,6 +186,17 @@ export class WslPtyTransportAdapter implements WslPtyTransport {
     }
     this.output = new PassThrough();
     this.done = handle.done;
+      this.stdinError = (error: unknown): void => {
+        if (!this.closed && !this.output.destroyed) this.output.destroy(asError(error));
+      };
+      this.stdinClose = (): void => {
+        if (!this.closed && !this.processDone && !this.output.destroyed) {
+          this.output.destroy(new Error("dsh-plugin-bash-wsl: subprocess stdin closed unexpectedly"));
+        }
+        handle.stdin?.off("error", this.stdinError);
+      };
+      handle.stdin.on("error", this.stdinError);
+      handle.stdin.once("close", this.stdinClose);
     this.sources = [handle.stdout, handle.stderr];
     for (const source of this.sources) this.attachSource(source);
     void this.done.then(
@@ -240,6 +277,7 @@ export class WslPtyTransportAdapter implements WslPtyTransport {
     this.outputFinished = true;
     this.output.end();
     this.detachSources();
+      this.detachStdin();
   }
 
   private detachSources(): void {
@@ -249,6 +287,13 @@ export class WslPtyTransportAdapter implements WslPtyTransport {
       source.off("error", listeners.error);
     }
     this.listeners.clear();
+  }
+
+  private detachStdin(): void {
+    const stdin = this.handle.stdin;
+    if (stdin === undefined || stdin.closed !== true) return;
+    stdin.off("error", this.stdinError);
+    stdin.off("close", this.stdinClose);
   }
 
   private async terminateOnce(): Promise<void> {
@@ -272,6 +317,7 @@ export class WslPtyTransportAdapter implements WslPtyTransport {
       errors.push(error);
     } finally {
       this.detachSources();
+        this.detachStdin();
       if (!this.output.destroyed && !this.outputFinished) {
         this.outputFinished = true;
         this.output.end();
@@ -617,7 +663,9 @@ export class WslPtySession implements TerminalBackendSession {
   private readonly emulatorBarriers = new Map<number, Deferred<void>>();
   private emulatorOutputPaused = false;
   private emulatorWriting = false;
+  private emulatorWritingSequence = 0;
   private responseWrites = Promise.resolve();
+  private readonly responseWritesBySequence = new Map<number, Promise<void>>();
   private pendingResponseWrites = 0;
   private emulatorClosed = false;
 
@@ -640,14 +688,22 @@ export class WslPtySession implements TerminalBackendSession {
             return;
           }
           this.pendingResponseWrites += 1;
+          const responseSequence = this.emulatorWritingSequence || this.emulatorQueuedSequence;
           const response = this.responseWrites.then(async () => {
             if (!this.emulatorClosed && !this.closing) await this.terminal.write(data);
           });
-          this.responseWrites = response.then(() => {
+          const settled = response.then(() => {
             this.pendingResponseWrites -= 1;
           }, (error: unknown) => {
             this.pendingResponseWrites -= 1;
             if (!this.emulatorClosed && !this.closing) this.onTransportFailure(error);
+          });
+          this.responseWrites = settled;
+          this.responseWritesBySequence.set(responseSequence, settled);
+          void settled.finally(() => {
+            if (this.responseWritesBySequence.get(responseSequence) === settled) {
+              this.responseWritesBySequence.delete(responseSequence);
+            }
           });
         });
       } catch (error) {
@@ -910,7 +966,14 @@ export class WslPtySession implements TerminalBackendSession {
         this.settleActive("session_exit");
         return;
       }
-      const foreground = await this.inspectForegroundAfterProtocol();
+        let protocolSequence = this.promptSeen
+          ? this.promptEmulatorSequence
+          : this.emulatorQueuedSequence;
+        let foreground = await this.inspectForegroundAfterProtocol(protocolSequence);
+        if (this.promptSeen && this.promptEmulatorSequence > protocolSequence) {
+          protocolSequence = this.promptEmulatorSequence;
+          foreground = await this.inspectForegroundAfterProtocol(protocolSequence);
+        }
       if (this.active !== operation || this.closing || this.interrupting === operation) return;
       if (operation.settled) { this.clearActive(); return; }
       const idleFor = Date.now() - this.lastOutputAt;
@@ -922,7 +985,7 @@ export class WslPtySession implements TerminalBackendSession {
         this.promptTextSeen &&
         this.promptReadyAt !== undefined &&
         this.promptEmulatorSequence <= this.emulatorParsedSequence &&
-        this.pendingResponseWrites === 0 &&
+          this.pendingResponseWrites === 0 &&
         Date.now() - this.promptReadyAt >= this.config.pollIntervalMs &&
         (foreground === undefined || foreground.processGroupId === this.shellPgid)
       ) {
@@ -964,9 +1027,11 @@ export class WslPtySession implements TerminalBackendSession {
   }
 
   /** Drain the captured input prefix, not an unending future background stream. */
-  private async inspectForegroundAfterProtocol(): Promise<WslPtyForeground | undefined> {
+  private async inspectForegroundAfterProtocol(
+    throughSequence = this.emulatorQueuedSequence,
+  ): Promise<WslPtyForeground | undefined> {
     if (this.options.emulator === undefined) return this.terminal.inspectForeground();
-    const sequence = this.emulatorQueuedSequence;
+    const sequence = throughSequence;
     if (sequence > this.emulatorParsedSequence) {
       let barrier = this.emulatorBarriers.get(sequence);
       if (barrier === undefined) {
@@ -975,13 +1040,13 @@ export class WslPtySession implements TerminalBackendSession {
       }
       await barrier.promise;
     }
-    for (;;) {
-      const responseWrites = this.responseWrites;
-      await responseWrites;
-      if (this.transportFailure !== undefined) throw this.transportFailure;
-      const foreground = await this.terminal.inspectForeground();
-      if (responseWrites === this.responseWrites && this.pendingResponseWrites === 0) return foreground;
-    }
+    // Await replies already emitted by parsed input, including a terminal query
+    // that arrived immediately after the prompt. Do not wait for an unparsed
+    // future background chunk merely because it has a later input sequence.
+    const responseWrites = [...this.responseWritesBySequence.values()];
+    await Promise.all(responseWrites);
+    if (this.transportFailure !== undefined) throw this.transportFailure;
+    return this.terminal.inspectForeground();
   }
 
   private queueEmulatorData(data: string): void {
@@ -1013,10 +1078,12 @@ export class WslPtySession implements TerminalBackendSession {
     const sequence = this.emulatorQueuedSequence;
     this.emulatorBuffer = "";
     this.emulatorWriting = true;
+      this.emulatorWritingSequence = sequence;
     try {
       this.options.emulator.write(data, () => {
         if (this.emulatorClosed) return;
         this.emulatorWriting = false;
+          this.emulatorWritingSequence = 0;
         this.emulatorPendingBytes -= bytes;
         this.emulatorParsedSequence = sequence;
         for (const [target, barrier] of this.emulatorBarriers) {
@@ -1032,6 +1099,7 @@ export class WslPtySession implements TerminalBackendSession {
         this.pumpEmulator();
       });
     } catch (error) {
+        this.emulatorWritingSequence = 0;
       this.onTransportFailure(error);
     }
   }
@@ -1042,6 +1110,8 @@ export class WslPtySession implements TerminalBackendSession {
     this.emulatorBuffer = "";
     this.emulatorPendingBytes = 0;
     this.emulatorWriting = false;
+    this.emulatorWritingSequence = 0;
+    this.responseWritesBySequence.clear();
     for (const barrier of this.emulatorBarriers.values()) barrier.resolve();
     this.emulatorBarriers.clear();
     this.emulatorOutputPaused = false;

@@ -29,6 +29,11 @@ const STRING_OR_NULL = [
   { type: "null" },
 ] as const;
 
+const STRING_OR_NUMBER = [
+  { type: "string" },
+  { type: "number" },
+] as const;
+
 const CAPTURED_STREAM_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -51,6 +56,15 @@ const ONE_SHOT_OUTPUT_SCHEMA = {
     timeoutMs: { type: "number", required: true },
     stdout: { ...CAPTURED_STREAM_SCHEMA, required: true },
     stderr: { ...CAPTURED_STREAM_SCHEMA, required: true },
+      failure: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          kind: { type: "string", required: true },
+          message: { type: "string", required: true },
+          code: { oneOf: STRING_OR_NUMBER },
+        },
+      },
     sandbox: {
       type: "object",
       additionalProperties: false,
@@ -74,6 +88,7 @@ type OneShotOutput = {
   timeoutMs: number;
   stdout: { text: string; truncated: boolean; spillPath?: string };
   stderr: { text: string; truncated: boolean; spillPath?: string };
+  failure?: { kind: string; message: string; code?: string | number };
   sandbox: {
     mode: SandboxMode;
     denied: boolean;
@@ -134,6 +149,13 @@ function canonicalResult(result: OneShotResult): OneShotOutput {
     timeoutMs: result.timeoutMs,
     stdout: canonicalStream(result.stdout),
     stderr: canonicalStream(result.stderr),
+    ...(result.failure === undefined ? {} : {
+      failure: {
+        kind: result.failure.kind,
+        message: result.failure.message,
+        ...(result.failure.code === undefined ? {} : { code: result.failure.code }),
+      },
+    }),
     sandbox: {
       mode: result.sandbox.mode,
       denied: result.sandbox.denied,

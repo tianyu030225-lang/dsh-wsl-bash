@@ -17,6 +17,9 @@ import { registerOneShotTools } from "../../../src/tools/register.js";
 
 type RegisteredTool = {
   name: string;
+  output: {
+    render: (args: Record<string, unknown>, value: unknown) => Array<{ type: string; text: string }>;
+  };
   execute: (
     args: Record<string, unknown>,
     exec: Record<string, unknown>,
@@ -38,8 +41,10 @@ function subprocessHandle() {
   };
 }
 
-function registerGitTool(policy: Record<string, unknown>) {
-  const spawn = vi.fn((..._args: unknown[]) => subprocessHandle());
+function registerGitTool(
+  policy: Record<string, unknown>,
+  spawn = vi.fn((..._args: unknown[]) => subprocessHandle()),
+) {
   const services: Record<string, unknown> = {
     sandboxPolicy: { resolve: vi.fn(() => policy) },
     subprocess: { spawn },
@@ -75,6 +80,30 @@ async function executeGitTool(
 }
 
 describe("registered git_bash workspace-root working directory contract", () => {
+    it("preserves and renders managed spawn failures", async () => {
+      const error = Object.assign(new Error("spawn EACCES denied"), { code: "EACCES" });
+      const spawn = vi.fn(() => { throw error; });
+      const execution = registerGitTool({
+        mode: "danger-full-access",
+        workspaceRoot: "C:\\Users\\Alice\\work\\dsh_bash",
+      }, spawn);
+      const args = { command: "printf ok", description: "spawn failure contract" };
+      const result = await execution.gitBash.execute(args, {
+        agent: { id: "agent-a" },
+        callId: "git-spawn-failure",
+        signal: new AbortController().signal,
+      }) as any;
+
+      expect(result.failure).toEqual({
+        kind: "spawn-error",
+        message: "spawn EACCES denied",
+        code: "EACCES",
+      });
+      expect(execution.gitBash.output.render(args, result)[0]?.text).toMatch(
+        /failure: spawn-error.*spawn EACCES denied.*code EACCES/s,
+      );
+    });
+
   it.each([
     ["omitted", undefined, "C:\\Users\\Alice\\work\\dsh_bash"],
     [
