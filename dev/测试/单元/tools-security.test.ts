@@ -63,7 +63,7 @@ describe("one-shot tool security fences", () => {
       "-d",
       "Ubuntu",
       "--cd",
-      "/mnt/c/Users/Alice/work/dsh_bash/目录 with spaces",
+      "C:\\Users\\Alice\\work\\dsh_bash\\目录 with spaces",
     ]);
     expect(plan.argv).toContain("--bind");
     expect(plan.argv).not.toContain("--unshare-net");

@@ -99,6 +99,25 @@ function canonicalizationHandle(spec: SubprocessSpawnSpec): SubprocessHandle {
   };
 }
 
+function translationHandle(spec: SubprocessSpawnSpec): SubprocessHandle {
+  const windowsPath = spec.argv.at(-1) ?? "C:\\Users\\Alice\\work\\dsh_bash";
+  const mapped = windowsPath.replace(/^([A-Za-z]):/, (_match, drive: string) => `/mnt/${drive.toLowerCase()}`)
+    .replaceAll("\\", "/");
+  const reader = (text: string) => ({
+    readFrom: () => ({ text, nextOffset: Buffer.byteLength(text), lossy: false }),
+  });
+  return {
+    stdin: new PassThrough(),
+    stdout: Readable.from([`${mapped}\n`]),
+    stderr: Readable.from([]),
+    control: undefined,
+    collected: { stdout: reader(`${mapped}\n`), stderr: reader("") },
+    done: Promise.resolve({ exitCode: 0, signal: null }),
+    terminate: vi.fn(),
+    waitForExit: vi.fn(async () => true),
+  };
+}
+
 function controlledPrompt(): string {
   return "\u001b]133;D;0\u0007__DSH_PERSISTENT_BASH_PROMPT__ ";
 }
@@ -113,12 +132,13 @@ function backendContext(spawn: (spec: SubprocessSpawnSpec) => SubprocessHandle):
   return {
     context: {
       subprocess: {
-        // Windows production code canonicalizes the mapped root and cwd with
-        // two read-only WSL realpath probes before creating the terminal.
+          // Windows production code translates and canonicalizes root and cwd
+          // with read-only WSL probes before creating the terminal.
         // Keep those probes explicit in the fake seam so the lifecycle tests
         // assert terminal allocation rather than depending on host filesystem.
-        spawn: (spec: SubprocessSpawnSpec) =>
-          spec.argv.includes("/usr/bin/realpath") ? canonicalizationHandle(spec) : spawn(spec),
+          spawn: (spec: SubprocessSpawnSpec) => spec.argv.includes("/usr/bin/wslpath")
+            ? translationHandle(spec)
+            : spec.argv.includes("/usr/bin/realpath") ? canonicalizationHandle(spec) : spawn(spec),
         spawnTerminal,
       },
       terminals: { registerBackend: vi.fn() },

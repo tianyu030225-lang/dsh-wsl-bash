@@ -1,6 +1,7 @@
 import { posix } from "node:path";
 
 import type { SandboxMode } from "../types.js";
+import { BASH_STARTUP_ENVIRONMENT } from "./bootstrap.js";
 
 export interface BwrapRequest {
   mode: SandboxMode;
@@ -57,6 +58,10 @@ export function buildBwrapArgs(request: BwrapRequest): readonly string[] {
     "--die-with-parent",
     "--new-session",
     "--unshare-pid",
+    ...BASH_STARTUP_ENVIRONMENT.flatMap((name) => ["--unsetenv", name]),
+    "--setenv",
+    "SHELL",
+    "/bin/bash",
   ];
 
  if (request.mode === "danger-full-access") {

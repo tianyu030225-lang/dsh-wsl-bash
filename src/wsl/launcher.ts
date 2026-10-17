@@ -98,6 +98,13 @@ export type WslPathCanonicalizer = (
   signal?: AbortSignal,
 ) => Promise<string>;
 
+/** Resolve one validated Windows path through the selected WSL distribution. */
+export type WslPathTranslator = (
+  config: ResolvedPluginConfig,
+  windowsPath: string,
+  signal?: AbortSignal,
+) => Promise<string>;
+
 export interface WslBoundaryInput {
   mode: WslExecutionBoundary["mode"];
   workspaceRoot: string;
@@ -135,6 +142,7 @@ export async function buildWslLaunchPlan(
   boundary: WslBoundaryInput,
   signal?: AbortSignal,
   canonicalize?: WslPathCanonicalizer,
+  translate: WslPathTranslator = mapWindowsPathToWsl,
 ): Promise<WslLaunchPlan> {
   signal?.throwIfAborted();
   assertSandboxMode(boundary.mode);
@@ -156,8 +164,8 @@ export async function buildWslLaunchPlan(
   const workspaceRoot = assertSafeWorkspaceRoot(boundary.workspaceRoot);
   const workdir = resolveContainedWorkdir(workspaceRoot, boundary.workdir);
   const [mappedWorkspaceRootLinux, mappedWorkdirLinux] = await Promise.all([
-    mapWindowsPathToWsl(config, workspaceRoot, signal),
-    mapWindowsPathToWsl(config, workdir, signal),
+    translate(config, workspaceRoot, signal),
+    translate(config, workdir, signal),
   ]);
   signal?.throwIfAborted();
   let workspaceRootLinux = mappedWorkspaceRootLinux;

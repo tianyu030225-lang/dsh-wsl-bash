@@ -7,6 +7,7 @@ import {
 } from "../discovery/wsl.js";
 import { runForeground } from "../tools/process.js";
 import { SUPPORTED_DSH_VERSIONS, readDshVersion } from "../runtime.js";
+import { cleanWslBashArgv, sanitizedWslHostEnvironment } from "../wsl/bootstrap.js";
 
 export const EXPECTED_DSH_VERSIONS = SUPPORTED_DSH_VERSIONS;
 /** @deprecated The doctor accepts both versions in EXPECTED_DSH_VERSIONS. */
@@ -42,7 +43,12 @@ export interface DoctorOptions {
   pathExists?: (path: string) => boolean;
   gitBashFs?: GitBashFs;
   /** Used by unit tests and embedders to observe probe argv. */
-  probe?: (executable: string, argv: readonly string[], timeoutMs: number) => Promise<ProbeResult>;
+  probe?: (
+    executable: string,
+    argv: readonly string[],
+    timeoutMs: number,
+    execution?: ProbeExecutionOptions,
+  ) => Promise<ProbeResult>;
   now?: () => Date;
 }
 
@@ -53,6 +59,10 @@ export interface ProbeResult {
   failure?: string;
 }
 
+export interface ProbeExecutionOptions {
+  env?: NodeJS.ProcessEnv | undefined;
+}
+
 const MANUAL = {
   windows: "在 Windows 主机上运行 DSH；Linux/macOS 不提供 Windows 原生 Git Bash/WSL 后端。",
   dsh: "使用已验证的 DSH 0.2.0-rc.2（Desktop）或 0.2.1-alpha.1（CLI）；不要忽略版本不兼容检查。",
@@ -61,6 +71,7 @@ const MANUAL = {
   bash: "在 Ubuntu 中确认 /bin/bash 可执行。",
   bwrap: "在 Ubuntu 中安装 bubblewrap（例如 apt install bubblewrap），然后重试 doctor。",
   script: "在 Ubuntu 中安装 util-linux/script（例如 apt install util-linux），然后重试 doctor。",
+  scriptRuntime: "已找到 util-linux/script，但无法经可信 /bin/bash 启动；检查发行版环境和 SHELL 配置。",
   realpath: "在 Ubuntu 中确认 coreutils/realpath 可执行，然后重试 doctor。",
   mapping: "确认 Windows workspace 位于本地磁盘且 wslpath 能映射；不要使用 UNC/device namespace。",
   git: "安装 Git for Windows，或通过 profile YAML / DSH_GIT_BASH_PATH 指向本地 Git\\bin\\bash.exe。",
@@ -103,29 +114,41 @@ export async function runDoctor(options: DoctorOptions = {}): Promise<DoctorRepo
 
   const probe = options.probe ?? defaultProbe;
   if (wslPath !== undefined) {
-    const list = await safeProbe(probe, wslPath, ["-l", "-q"], 20_000);
-    // `wsl.exe -l -q` writes UTF-16LE when its stdout is redirected. Node's
-    // byte capture intentionally does not guess encodings, so the observable
-    // string contains interleaved NULs (U\0b\0u...). Strip those transport
-    // NULs before parsing the line-oriented WSL response.
+    const wslEnvironment = sanitizedWslHostEnvironment(env, { WSL_UTF8: "1" });
+    const list = await safeProbe(probe, wslPath, ["-l", "-q"], 20_000, { env: wslEnvironment });
     const distros = stripProbeNuls(list.stdout)
       .split(/[\r\n]+/)
       .map((line) => line.trim())
       .filter(Boolean);
-    if (list.failure) checks.push(fail("wsl2", `wsl.exe probe failed: ${list.failure}`, MANUAL.distro));
-    else if (list.exitCode !== 0) checks.push(fail("wsl2", `wsl.exe -l -q exited ${list.exitCode}`, MANUAL.distro));
-    else if (!distros.some((name) => name.toLowerCase() === distro.toLowerCase())) {
-      checks.push(fail("wsl2", `${distro} is not listed by WSL`, MANUAL.distro));
-    } else checks.push(pass("wsl2", `${distro} listed by WSL`));
-
-    const kernel = await safeProbe(probe, wslPath, ["-d", distro, "--exec", "/bin/uname", "-r"], 20_000);
+    const listed = !list.failure && list.exitCode === 0 &&
+      distros.some((name) => name.toLowerCase() === distro.toLowerCase());
+    const kernel = await safeProbe(
+      probe,
+      wslPath,
+      ["-d", distro, "--exec", "/bin/uname", "-r"],
+      20_000,
+      { env: wslEnvironment },
+    );
     if (!kernel.failure && kernel.exitCode === 0 && /wsl2/i.test(stripProbeNuls(kernel.stdout))) {
+      checks.push(pass("wsl2", listed
+        ? `${distro} listed by WSL and started successfully`
+        : `${distro} started successfully; redirected distro listing was unavailable or did not match`));
       checks.push(pass("wsl2-kernel", stripProbeNuls(kernel.stdout).trim()));
     } else {
+      const listDetail = list.failure ? `; list probe failed: ${list.failure}`
+        : list.exitCode !== 0 ? `; list probe exited ${list.exitCode}`
+          : listed ? "" : `; ${distro} was not found in the decoded distro list`;
+      checks.push(fail("wsl2", `selected distro could not start${listDetail}`, MANUAL.distro));
       checks.push(fail("wsl2-kernel", `Ubuntu does not report a WSL2 kernel${kernel.failure ? `: ${kernel.failure}` : ""}`, MANUAL.distro));
     }
 
-    const bash = await safeProbe(probe, wslPath, ["-d", distro, "--exec", "/bin/bash", "--noprofile", "--norc", "-c", "test -x /bin/bash"], 20_000);
+    const bash = await safeProbe(
+      probe,
+      wslPath,
+      ["-d", distro, "--exec", ...cleanWslBashArgv("test -x /bin/bash")],
+      20_000,
+      { env: wslEnvironment },
+    );
     addProbeCheck(checks, "wsl-bash", bash, MANUAL.bash, "WSL /bin/bash functional");
 
     const bwrap = await safeProbe(probe, wslPath, [
@@ -138,20 +161,49 @@ export async function runDoctor(options: DoctorOptions = {}): Promise<DoctorRepo
       "--cap-drop", "ALL", "--disable-userns",
       "--", "/bin/sh", "-c",
       "test -z \"${WSL_INTEROP-}\" && test -z \"${WSLENV-}\" && ! /mnt/c/Windows/System32/cmd.exe /d /c exit 0",
-    ], 20_000);
+    ], 20_000, { env: wslEnvironment });
     addProbeCheck(checks, "bwrap", bwrap, MANUAL.bwrap, "bubblewrap functional with WSL interop disabled (network namespace unchanged)");
 
-    const script = await safeProbe(probe, wslPath, ["-d", distro, "--exec", "/usr/bin/script", "-qefc", "exit 0", "/dev/null"], 20_000);
-    addProbeCheck(checks, "script", script, MANUAL.script, "script functional");
+    const scriptPresent = await safeProbe(
+      probe,
+      wslPath,
+      ["-d", distro, "--exec", "/usr/bin/test", "-x", "/usr/bin/script"],
+      20_000,
+      { env: wslEnvironment },
+    );
+    if (scriptPresent.failure || scriptPresent.exitCode !== 0) {
+      addProbeCheck(checks, "script", scriptPresent, MANUAL.script, "util-linux/script installed");
+    } else {
+      const script = await safeProbe(
+        probe,
+        wslPath,
+        ["-d", distro, "--exec", ...cleanWslBashArgv("SHELL=/bin/bash exec /usr/bin/script -qefc 'exit 0' /dev/null")],
+        20_000,
+        { env: wslEnvironment },
+      );
+      addProbeCheck(checks, "script", script, MANUAL.scriptRuntime, "script functional through trusted Bash");
+    }
 
-    const realpath = await safeProbe(probe, wslPath, ["-d", distro, "--exec", "/usr/bin/realpath", "-e", "/"], 20_000);
+    const realpath = await safeProbe(
+      probe,
+      wslPath,
+      ["-d", distro, "--exec", "/usr/bin/realpath", "-e", "/"],
+      20_000,
+      { env: wslEnvironment },
+    );
     addProbeCheck(checks, "realpath", realpath, MANUAL.realpath, "realpath functional");
 
     const workspace = options.workspaceRoot ?? process.cwd();
     // Use the equivalent slash form accepted by wslpath, with direct exec so
     // WSL's default shell cannot reinterpret the mapping argument.
     const mappingInput = workspace.replaceAll("\\", "/");
-    const mapping = await safeProbe(probe, wslPath, ["-d", distro, "--exec", "/usr/bin/wslpath", "-a", mappingInput], 20_000);
+    const mapping = await safeProbe(
+      probe,
+      wslPath,
+      ["-d", distro, "--exec", "/usr/bin/wslpath", "-a", "-u", mappingInput],
+      20_000,
+      { env: wslEnvironment },
+    );
     if (mapping.failure || mapping.exitCode !== 0 || !stripProbeNuls(mapping.stdout).trim().startsWith("/")) {
       checks.push(fail("path-mapping", `Windows↔WSL mapping failed${mapping.failure ? `: ${mapping.failure}` : ""}`, MANUAL.mapping));
     } else checks.push(pass("path-mapping", `${workspace} -> ${stripProbeNuls(mapping.stdout).trim()}`));
@@ -203,8 +255,20 @@ function addProbeCheck(checks: DoctorCheck[], id: string, result: ProbeResult, m
   else checks.push(fail(id, `${result.failure ? `probe failed: ${result.failure}` : `exit ${result.exitCode}`}${result.stderr.trim() ? ` (${result.stderr.trim()})` : ""}`, manual));
 }
 
-async function defaultProbe(executable: string, argv: readonly string[], timeoutMs: number): Promise<ProbeResult> {
-  const result = await runForeground({ executable, argv, timeoutMs, memoryLimit: 64 * 1024, spillLimit: 64 * 1024 });
+async function defaultProbe(
+  executable: string,
+  argv: readonly string[],
+  timeoutMs: number,
+  execution: ProbeExecutionOptions = {},
+): Promise<ProbeResult> {
+  const result = await runForeground({
+    executable,
+    argv,
+    timeoutMs,
+    memoryLimit: 64 * 1024,
+    spillLimit: 64 * 1024,
+    ...(execution.env === undefined ? {} : { env: execution.env }),
+  });
   return {
     exitCode: result.exitCode,
     stdout: result.stdout.text,
@@ -218,9 +282,12 @@ async function safeProbe(
   executable: string,
   argv: readonly string[],
   timeoutMs: number,
+  execution?: ProbeExecutionOptions,
 ): Promise<ProbeResult> {
   try {
-    return await probe(executable, argv, timeoutMs);
+    return execution === undefined
+      ? await probe(executable, argv, timeoutMs)
+      : await probe(executable, argv, timeoutMs, execution);
   } catch (error) {
     return {
       exitCode: null,

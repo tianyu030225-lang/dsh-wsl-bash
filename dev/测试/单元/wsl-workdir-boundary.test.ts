@@ -44,7 +44,10 @@ function completedHandle(stdoutText: string, exitCode: number): SubprocessHandle
   };
 }
 
-function managedSeam(canonicalOutput: string): {
+  function managedSeam(
+    canonicalOutput: string,
+    final: { stdout?: string; exitCode?: number } = {},
+  ): {
   runtime: SubprocessRuntime;
   spawn: ReturnType<typeof vi.fn>;
   specs: SubprocessSpawnSpec[];
@@ -55,7 +58,10 @@ function managedSeam(canonicalOutput: string): {
     // The final launch uses a non-zero sentinel. This proves that the path
     // canonicalization reached the managed launch seam without claiming that
     // a command actually ran successfully.
-    return completedHandle(specs.length === 1 ? canonicalOutput : "", specs.length === 1 ? 0 : 73);
+      return completedHandle(
+        specs.length === 1 ? canonicalOutput : (final.stdout ?? ""),
+        specs.length === 1 ? 0 : (final.exitCode ?? 73),
+      );
   });
   return {
     runtime: { spawn } as unknown as SubprocessRuntime,
@@ -79,6 +85,22 @@ function executeOptions(runtime: SubprocessRuntime) {
 }
 
 describe("WSL workdir representation at the managed canonicalization seam", () => {
+    it("classifies a script PTY permission denial carried by merged stdout", async () => {
+      const seam = managedSeam(`${WSL_ROOT}\n${WSL_ROOT}\n`, {
+        stdout: "bash: marker: Read-only file system\r\n",
+        exitCode: 1,
+      });
+      const result = await executeWslBash(
+        { command: "touch /outside", description: "merged denial contract" },
+        executeOptions(seam.runtime),
+      );
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr.text).toBe("");
+      expect(result.stdout.text).toMatch(/Read-only file system/);
+      expect(result.sandbox.denied).toBe(true);
+    });
+
   it("keeps the discovery and argv layers equivalent for /mnt/<drive> and Windows spellings", () => {
     expect(resolveWslWorkspacePaths(WORKSPACE_ROOT, WSL_CWD)).toEqual({
       workspaceRoot: WSL_ROOT,
@@ -100,12 +122,13 @@ describe("WSL workdir representation at the managed canonicalization seam", () =
     );
 
     expect(plan.cwd).toBe(WSL_CWD);
+    expect(plan.hostCwd).toBe(WINDOWS_CWD.replace(/^C:/, "c:"));
     expect(plan.workspaceRoot).toBe(WSL_ROOT);
     expect(plan.argv.slice(0, 5)).toEqual([
       "-d",
       DISTRO,
       "--cd",
-      WSL_CWD,
+      WINDOWS_CWD.replace(/^C:/, "c:"),
       "--exec",
     ]);
   });
@@ -140,7 +163,7 @@ describe("WSL workdir representation at the managed canonicalization seam", () =
       "-d",
       DISTRO,
       "--cd",
-      WSL_CWD,
+        expectedHostCwd,
     ]);
     expect(launch.argv[5]).toBe("--exec");
   });
@@ -159,6 +182,25 @@ describe("WSL workdir representation at the managed canonicalization seam", () =
           linuxPath === WSL_ROOT ? "/mnt/c/workspace/redirected-root" : linuxPath,
       ),
     ).rejects.toThrow(/realpath no longer maps to the immutable policy workspace root/i);
+  });
+
+  it("accepts a target distro whose Windows drives are mounted outside /mnt", async () => {
+    const customRoot = "/windir/c/workspace/dsh 插件 测试";
+    const customCwd = `${customRoot}/子目录`;
+    const plan = await buildWslLaunchPlan(
+      CONFIG,
+      {
+        mode: "workspace-write",
+        workspaceRoot: WORKSPACE_ROOT,
+        workdir: WINDOWS_CWD,
+      },
+      undefined,
+      async (linuxPath) => linuxPath,
+      async (_config, windowsPath) => windowsPath === WORKSPACE_ROOT ? customRoot : customCwd,
+    );
+
+    expect(plan.workspaceRootLinux).toBe(customRoot);
+    expect(plan.workdirLinux).toBe(customCwd);
   });
 
   it("rejects realpath changes that model a workdir junction escaping the root", async () => {

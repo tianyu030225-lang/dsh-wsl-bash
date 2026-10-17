@@ -115,8 +115,9 @@ describe("WSL direct-exec argv contract", () => {
       "-d",
       DISTRO,
       "--cd",
-      "/mnt/c/Users/Alice/work/dsh 插件测试",
+      WORKSPACE_ROOT,
     ]);
+    expect(plan.hostCwd).toBe(WORKSPACE_ROOT);
     expect(plan.argv[4]).toBe("--exec");
     expect(plan.argv[5]).toBe("/usr/bin/bwrap");
     expect(plan.argv.slice(0, 5)).not.toContain("--");
@@ -146,7 +147,16 @@ describe("WSL direct-exec argv contract", () => {
       DISTRO,
       "--exec",
     ]);
-    expect(spec.argv[4]).toBe("/bin/bash");
+    expect(spec.argv[4]).toBe("/usr/bin/env");
+    expect(spec.argv).toEqual(expect.arrayContaining([
+      "-u", "BASH_ENV", "-u", "ENV", "SHELL=/bin/bash", "/bin/bash",
+    ]));
+    expect(spec.env).toMatchObject({
+      BASH_ENV: undefined,
+      ENV: undefined,
+      SHELLOPTS: undefined,
+      BASHOPTS: undefined,
+    });
   });
 
   it("uses --exec for every doctor WSL command while retaining bwrap's inner --", async () => {

@@ -130,7 +130,11 @@ describe("WSL path and sandbox boundaries", () => {
       args: [],
     });
     expect(args).toContain("--bind");
-    expect(args).not.toContain("--unsetenv");
+    expect(args).toEqual(expect.arrayContaining([
+      "--unsetenv", "BASH_ENV", "--unsetenv", "ENV", "--setenv", "SHELL", "/bin/bash",
+    ]));
+    expect(args).not.toContain("WSL_INTEROP");
+    expect(args).not.toContain("WSLENV");
     expect(args).not.toContain("--tmpfs");
   });
 });

@@ -5,6 +5,11 @@ import {
 } from "../discovery/wsl.js";
 import { resolveHostBoundary } from "../wsl/launcher.js";
 import { buildBwrapArgs } from "../wsl/sandbox.js";
+import {
+  cleanWslBashArgv,
+  sanitizedWslHostEnvironment,
+  wslHostEnvironmentOverrides,
+} from "../wsl/bootstrap.js";
 import { spawn } from "node:child_process";
 import type { SubprocessRuntime } from "@deepseek-ai/dsh-subprocess";
 import {
@@ -31,7 +36,7 @@ export const WSL_BASH_TOOL_NAME = "wsl_bash";
 
 /** This script is constant; model command text is supplied only as base64 argv. */
 export const WSL_RUNNER_SCRIPT =
-  'set -eu; command -v /usr/bin/script >/dev/null 2>&1; export DSH_COMMAND_B64="$1"; exec /usr/bin/script -qefc \'/bin/bash --noprofile --norc -c "$(printf %s "$DSH_COMMAND_B64" | /usr/bin/base64 -d)"\' /dev/null';
+  'set -eu; command -v /usr/bin/script >/dev/null 2>&1; export SHELL=/bin/bash DSH_COMMAND_B64="$1"; exec /usr/bin/script -qefc \'/bin/bash --noprofile --norc -c "$(printf %s "$DSH_COMMAND_B64" | /usr/bin/base64 -d)"\' /dev/null';
 
 export interface WslBashArgs {
   command: string;
@@ -57,6 +62,8 @@ export interface WslArgvPlan {
   executable: string;
   argv: readonly string[];
   cwd?: string;
+  /** Validated Windows cwd passed to the outer wsl.exe launcher. */
+  hostCwd: string;
   mode: SandboxMode;
   workspaceRoot?: string;
 }
@@ -123,13 +130,18 @@ export function buildWslArgv(
   if (!policy.workspaceRoot) {
     throw new Error("wsl_bash: execution requires immutable sandboxPolicy.workspaceRoot");
   }
+  const boundary = resolveHostBoundary({
+    mode,
+    workspaceRoot: policy.workspaceRoot,
+    workdir: args.workdir,
+  });
   const paths = options.canonicalPaths ??
     resolveWslWorkspacePaths(policy.workspaceRoot, args.workdir);
   const cwd = paths.cwd;
   const workspaceRoot = paths.workspaceRoot;
 
   const argv: string[] = ["-d", distro];
-  argv.push("--cd", cwd);
+  argv.push("--cd", boundary.workdir);
   // --exec preserves Bash script arguments; -- invokes WSL's default shell,
   // which can expand the nested probe/runner text before the sandbox starts.
   argv.push("--exec");
@@ -154,7 +166,7 @@ export function buildWslArgv(
       ],
     }),
   );
-  return { executable, argv, cwd, mode, workspaceRoot };
+  return { executable, argv, cwd, hostCwd: boundary.workdir, mode, workspaceRoot };
 }
 
 export async function executeWslBash(
@@ -227,6 +239,7 @@ export async function executeWslBash(
       executable: plan.executable,
       distro,
       signal,
+        env: options.env,
       ...(options.subprocess === undefined ? {} : { subprocess: options.subprocess }),
     });
     if (!checked.ok) {
@@ -250,15 +263,20 @@ export async function executeWslBash(
   const result = options.subprocess === undefined
     ? await runForeground({
         ...processRequest,
+          env: sanitizedWslHostEnvironment(options.env ?? process.env),
         ...(options.spawnImpl === undefined ? {} : { spawnImpl: options.spawnImpl }),
       })
-    : await runSubprocessForeground({ ...processRequest, subprocess: options.subprocess });
+      : await runSubprocessForeground({
+          ...processRequest,
+          env: wslHostEnvironmentOverrides(options.env ?? process.env),
+          subprocess: options.subprocess,
+        });
   const restricted = effectiveMode !== "danger-full-access";
-  const stderrText = result.stderr.text;
+    const diagnosticText = `${result.stderr.text}\n${result.stdout.text}`;
   const runnerFailed = restricted &&
-    /(?:^|\n)\s*(?:bwrap|script):|creating new namespace|failed to setup|no such file or directory.*(?:bwrap|script)/i.test(stderrText);
+      /(?:^|\n)\s*(?:bwrap|script):|creating new namespace|failed to setup|no such file or directory.*(?:bwrap|script)/i.test(diagnosticText);
   const denied = restricted && result.exitCode !== 0 &&
-    /(?:read-only file system|permission denied|operation not permitted|\bEROFS\b|\bEACCES\b)/i.test(stderrText);
+      /(?:read-only file system|permission denied|operation not permitted|\bEROFS\b|\bEACCES\b)/i.test(diagnosticText);
   const failure = runnerFailed
     ? { kind: "runner-failure" as const, message: "WSL sandbox runner failed before or while starting the command" }
     : result.failure;
@@ -278,14 +296,16 @@ export async function probeWslRuntime(options: {
   executable: string;
   distro: string;
   signal?: AbortSignal;
+  env?: NodeJS.ProcessEnv | undefined;
   subprocess?: SubprocessRuntime | undefined;
 }): Promise<WslRuntimeProbeResult> {
   // Static probe only; it does not include model data and makes no writes.
   const request = {
     executable: options.executable,
     argv: [
-      "-d", options.distro, "--exec", "/bin/bash", "--noprofile", "--norc", "-c",
+      "-d", options.distro, "--exec", ...cleanWslBashArgv(
       "command -v /bin/bash >/dev/null && command -v /usr/bin/script >/dev/null && command -v /usr/bin/bwrap >/dev/null && /usr/bin/bwrap --die-with-parent --new-session --unshare-pid --unshare-user --ro-bind / / --tmpfs /run --tmpfs /tmp --unsetenv WSL_INTEROP --unsetenv WSLENV --cap-drop ALL --disable-userns -- /bin/sh -c 'test -z \"${WSL_INTEROP-}\" && test -z \"${WSLENV-}\" && ! /mnt/c/Windows/System32/cmd.exe /d /c exit 0' && /usr/bin/script -qefc 'exit 0' /dev/null",
+      ),
     ],
     timeoutMs: 20_000,
     signal: options.signal,
@@ -293,8 +313,12 @@ export async function probeWslRuntime(options: {
     spillLimit: DEFAULT_SPILL_LIMIT,
   };
   const probe = options.subprocess === undefined
-    ? await runForeground(request)
-    : await runSubprocessForeground({ ...request, subprocess: options.subprocess });
+    ? await runForeground({ ...request, env: sanitizedWslHostEnvironment(options.env ?? process.env) })
+    : await runSubprocessForeground({
+        ...request,
+        env: wslHostEnvironmentOverrides(options.env ?? process.env),
+        subprocess: options.subprocess,
+      });
   if (probe.failure) return { ok: false, message: `WSL runtime probe failed: ${probe.failure.message}` };
   if (probe.exitCode !== 0) {
     const detail = renderCapturedOutput(probe.stderr);
@@ -340,19 +364,18 @@ async function canonicalizeWslPaths(
       "-d",
       distro,
       "--exec",
-      "/bin/bash",
-      "--noprofile",
-      "--norc",
-      "-c",
+        ...cleanWslBashArgv(
       WSL_CANONICALIZE_SCRIPT,
       "dsh-wsl-canonicalize",
       boundary.workspaceRoot,
       boundary.workdir,
+        ),
     ],
     timeoutMs: 20_000,
     signal: options.signal,
     memoryLimit: 16 * 1024,
     spillLimit: 16 * 1024,
+      env: wslHostEnvironmentOverrides(options.env ?? process.env),
     subprocess: options.subprocess,
   });
   if (result.failure !== undefined || result.exitCode !== 0 || result.signal !== null) {
@@ -382,13 +405,13 @@ async function canonicalizeWslPaths(
   ) {
     throw new Error("wsl_bash: WSL path canonicalization returned invalid paths or framing");
   }
-  const expected = resolveWslWorkspacePaths(boundary.workspaceRoot, boundary.workdir);
-  if (workspaceRoot !== expected.workspaceRoot || cwd !== expected.cwd) {
+  const normalizedRoot = workspaceRoot.replace(/\/+$/, "") || "/";
+  if (cwd !== normalizedRoot && !cwd.startsWith(`${normalizedRoot}/`)) {
     throw new Error(
-      "wsl_bash: WSL realpath did not match the immutable Windows sandbox mapping",
+      "wsl_bash: WSL realpath escaped the immutable Windows sandbox mapping",
     );
   }
-  return expected;
+  return { workspaceRoot, cwd };
 }
 
 function validateWslArgs(args: WslBashArgs): void {

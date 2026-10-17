@@ -22,8 +22,10 @@ import {
   buildWslLaunchPlan,
   resolveHostBoundary,
   type WslPathCanonicalizer,
+  type WslPathTranslator,
 } from "./launcher.js";
 import { buildBwrapArgs } from "./sandbox.js";
+import { wslHostEnvironmentOverrides } from "./bootstrap.js";
 import { runSubprocessForeground } from "../tools/process.js";
 
 type SandboxMode = "read-only" | "workspace-write" | "danger-full-access";
@@ -165,6 +167,7 @@ async function canonicalizePathInsideWsl(
     signal,
     memoryLimit: 16 * 1024,
     spillLimit: 16 * 1024,
+    env: wslHostEnvironmentOverrides(),
     subprocess,
   });
   if (result.failure !== undefined || result.exitCode !== 0 || result.signal !== null) {
@@ -185,6 +188,46 @@ async function canonicalizePathInsideWsl(
     throw new Error("dsh-plugin-bash-wsl: WSL realpath returned an invalid path");
   }
   return withoutTrailingNewline;
+}
+
+async function translateWindowsPathInsideWsl(
+  subprocess: NonNullable<Context["subprocess"]>,
+  config: ResolvedPluginConfig,
+  windowsPath: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  signal?.throwIfAborted();
+  const result = await runSubprocessForeground({
+    executable: config.wslExecutable,
+    argv: [
+      "-d",
+      config.distro,
+      "--exec",
+      "/usr/bin/wslpath",
+      "-a",
+      "-u",
+      windowsPath,
+    ],
+    cwd: windowsPath,
+    timeoutMs: 20_000,
+    signal,
+    memoryLimit: 16 * 1024,
+    spillLimit: 16 * 1024,
+    env: wslHostEnvironmentOverrides(),
+    subprocess,
+  });
+  if (result.failure !== undefined || result.exitCode !== 0 || result.signal !== null) {
+    const detail = result.failure?.message ?? (result.stderr.text.trim() || `exit ${result.exitCode}`);
+    throw new Error(`dsh-plugin-bash-wsl: WSL path translation failed: ${detail}`);
+  }
+  if (result.stdout.truncated || result.stderr.truncated) {
+    throw new Error("dsh-plugin-bash-wsl: WSL path translation output exceeded the 16KiB safety bound");
+  }
+  const translated = result.stdout.text.replaceAll("\r", "").trim();
+  if (!translated.startsWith("/") || translated.includes("\0") || /[\r\n]/.test(translated)) {
+    throw new Error("dsh-plugin-bash-wsl: WSL path translation returned an invalid path");
+  }
+  return translated;
 }
 
 async function initializeSession(session: WslPtySession, signal?: AbortSignal): Promise<void> {
@@ -260,11 +303,19 @@ export class WslTerminalBackend implements TerminalBackend {
         signal,
       )
       : undefined;
+    const translate: WslPathTranslator | undefined = process.platform === "win32"
+      ? (_config, windowsPath, signal) => translateWindowsPathInsideWsl(
+        subprocess,
+        executionConfig,
+        windowsPath,
+        signal,
+      )
+      : undefined;
     const plan = await buildWslLaunchPlan(executionConfig, {
       mode: policy.mode,
       workspaceRoot: boundary.workspaceRoot,
       workdir: boundary.workdir,
-    }, spec.signal, canonicalize);
+      }, spec.signal, canonicalize, translate);
     const environment = childEnvironment(spec);
     const runnerArgs = buildBwrapArgs({
       mode: policy.mode,
@@ -288,7 +339,7 @@ export class WslTerminalBackend implements TerminalBackend {
       },
       graceMs: executionConfig.disposeGraceMs,
       ...(spec.signal === undefined ? {} : { signal: spec.signal }),
-      env: environment,
+        env: { ...wslHostEnvironmentOverrides(), ...environment },
     };
     let handle: SubprocessHandle;
     try {

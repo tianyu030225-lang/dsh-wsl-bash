@@ -128,6 +128,13 @@ function createBackendHarness(): {
       queueMicrotask(() => (live as LiveSubprocess).handle.stdout?.emit("data", CONTROLLED_PROMPT_FRAME));
       return (live as LiveSubprocess).handle;
     }
+      if (spec.argv.includes("/usr/bin/wslpath")) {
+        const windowsPath = spec.argv.at(-1);
+        if (windowsPath === undefined) throw new Error("wslpath fixture received no path");
+        const mapped = windowsPath.replace(/^([A-Za-z]):/, (_match, drive: string) => `/mnt/${drive.toLowerCase()}`)
+          .replaceAll("\\", "/");
+        return completedSubprocess(`${mapped}\n`);
+      }
     const linuxPath = spec.argv.at(-1);
     if (linuxPath === undefined) throw new Error("realpath fixture received no path");
     return completedSubprocess(`${linuxPath}\n`);
@@ -185,8 +192,10 @@ describe.skipIf(process.platform !== "win32")("WSL prompt producer backend contr
     });
 
     try {
-      expect(harness.specs).toHaveLength(3);
-      expect(harness.specs.slice(0, 2).map((spec) => spec.argv.slice(0, 4))).toEqual([
+      expect(harness.specs).toHaveLength(5);
+      expect(harness.specs.slice(0, 4).map((spec) => spec.argv.slice(0, 4))).toEqual([
+        ["C:\\Windows\\System32\\wsl.exe", "-d", "Ubuntu", "--exec"],
+        ["C:\\Windows\\System32\\wsl.exe", "-d", "Ubuntu", "--exec"],
         ["C:\\Windows\\System32\\wsl.exe", "-d", "Ubuntu", "--exec"],
         ["C:\\Windows\\System32\\wsl.exe", "-d", "Ubuntu", "--exec"],
       ]);
