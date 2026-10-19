@@ -1,8 +1,8 @@
-# dsh-plugin-bash-wsl 0.2.1
+# dsh-plugin-bash-wsl 0.2.2
 
 [简体中文](README.zh-CN.md)
 
-Native Git Bash and WSL backends for DSH on Windows. Plugin `0.2.1` targets Desktop and CLI `0.2.1-rc.2` with one shared package. It keeps the existing `pwsh` tool and adds two Web/Desktop modes:
+Native Git Bash and WSL backends for DSH on Windows. Plugin `0.2.2` targets Desktop and CLI `0.2.1-rc.2` with one shared package. It keeps the existing `pwsh` tool and adds two Web/Desktop modes:
 
 - **WSL 模式** (`bash-wsl`): Standard capabilities with an agent-owned persistent WSL `bash`;
 - **Git Bash 模式** (`bash-git-bash`): Standard capabilities with an agent-owned persistent native Git Bash `bash`, requiring explicit full access for the session.
@@ -11,18 +11,22 @@ Both modes retain one-shot `wsl_bash`, `git_bash`, and the official `pwsh`. They
 
 The package targets Node.js `>=22` and accepts only DSH `0.2.1-rc.2`. Older DSH versions are not supported by this release; use the documentation at the appropriate historical tag instead. GitHub source publication and npm registry publication are separate steps. An npm release is not currently announced; do not assume that this package name or an unpinned `latest` installs this source.
 
-The default branch documents the current `0.2.1` release source. Historical versions remain available through repository tags; use tag `v0.2.0` for the preceding release and `v0.1.0` only for DSH `0.1.0-rc.6`.
+The default branch documents the current `0.2.2` source. Historical tags and reports describe only their own revisions; `v0.1.0` targets DSH `0.1.0-rc.6`.
 
-Public regression sources, smoke scripts and fixtures are grouped under [`dev/测试/`](dev/测试/). Historical test artifacts stay in the ignored root `测试/运行产物/`; they are not included in Git or npm packages. The `0.2.1` report records the new test run, build and release gate; older reports certify only their named historical artifacts.
+Public regression sources, smoke scripts and fixtures are grouped under [`dev/测试/`](dev/测试/). Local test artifacts stay in the ignored root `测试/运行产物/`; they are not included in Git or npm packages. CI uploads its unit results, smoke diagnostic JSON and tested TGZ as Actions artifacts.
 
-## 0.2.1 compatibility and release evidence
+`0.2.2` fixes a CI gap: Ubuntu intentionally skipped 24 Windows-only tests, while the old Windows job did not run unit tests and allowed smoke failure. Windows unit tests and the provisioned WSL/CLI probes now block CI on failure or missing required coverage. See [CHANGELOG.md](CHANGELOG.md) for the detailed reasons.
+
+The earlier `0.2.1` upgrade followed [DSH `0.2.1-rc.2`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.2), which added **DeepSeek-V4.1-Flash-1017** support. The plugin adapts its Windows tools to that host; no model performance improvement is claimed.
+
+## 0.2.2 compatibility and release evidence
 
 | Host | Supported DSH version |
 | --- | --- |
 | Desktop | `0.2.1-rc.2` |
 | CLI | `0.2.1-rc.2` |
 
-The `0.2.1` release report is generated for one frozen candidate and identifies it by complete SHA-256. The [0.2.0 dual-host report](docs/testing-report-0.2.0.md) remains historical evidence for `v0.2.0` only. A package filename or version number alone is not proof that it is a tested candidate. Build from the source revision you intend to install, or use an explicitly published release asset with its own checksum.
+Automated CI covers Ubuntu/Windows unit tests and real Windows CLI/WSL security and integration probes. A green run is not full Desktop/GUI qualification: those interactive gates in `scripts/release-check.mjs` still require their own fresh evidence. No full `0.2.2` Desktop/GUI qualification is asserted here. The [0.2.0 dual-host report](docs/testing-report-0.2.0.md) remains historical evidence for `v0.2.0` only. Match every test result to its source revision and exact TGZ SHA-256; a filename or version number alone is insufficient.
 
 > **Unofficial community project.** This plugin is an independent, community-maintained extension and is **not affiliated with, endorsed by, or sponsored by DeepSeek**. "DeepSeek Harness" and "DSH" are trademarks of their respective owners. The plugin uses public DSH services and official packages; any plugin defect or behavior change is the responsibility of this repository, not DeepSeek or DSH.
 
@@ -54,7 +58,7 @@ The default distribution is `Ubuntu`. The plugin starts clean WSL shells (`--nop
 
 Git does not contain `dist/` or generated TGZ files. A GitHub source ZIP is not an installable DSH plugin tarball, and an old same-named TGZ left in a checkout must not be reused as the successor release.
 
-For the `0.2.1` source, use Windows Node.js `>=22` and `pnpm@11.21.0` as declared in `package.json`. Clone this repository and select the intended source revision before installing dependencies. From that checkout, the following Windows PowerShell commands create a separate package output directory:
+For the `0.2.2` source, use Windows Node.js `>=22` and `pnpm@11.21.0` as declared in `package.json`. Clone this repository and select the intended source revision before installing dependencies. From that checkout, the following Windows PowerShell commands create a separate package output directory:
 
 ```powershell
 pnpm install --frozen-lockfile
@@ -62,7 +66,7 @@ New-Item -ItemType Directory -Force -Path ".packages" | Out-Null
 pnpm pack --pack-destination ".packages"
 ```
 
-The existing `prepack` script runs `pnpm run build`, cleaning and rebuilding only this checkout's `dist/`. Do not omit development dependencies when building from source. The resulting `0.2.1` tarball is `.packages/dsh-plugin-bash-wsl-0.2.1.tgz`; retain its checksum with any release. These are build instructions, not a claim that a newly generated package has passed the release gate.
+The existing `prepack` script runs `pnpm run build`, cleaning and rebuilding only this checkout's `dist/`. Do not omit development dependencies when building from source. The resulting `0.2.2` tarball is `.packages/dsh-plugin-bash-wsl-0.2.2.tgz`; retain its checksum with any release. These are build instructions, not a claim that a newly generated package has passed the release gate.
 
 A `file:` or hoisted local install is a deployed copy or hardlink; a clean rebuild of this checkout can leave the profile's installed inode unchanged. Rebuilding or restarting alone is therefore not update proof. Reinstall the new TGZ into the exact target or isolated profile, confirm the runtime `installAnchor`, and compare the installed `dist` hashes with this build. A `link:` install is suitable only for explicitly verified local development and is never release evidence.
 
@@ -74,7 +78,7 @@ Back up the target profile's manifest, lockfile and this plugin before replaceme
 
 ```powershell
 Get-Command dsh
-dsh plugin --profile web add "C:\work\dsh-wsl-bash\.packages\dsh-plugin-bash-wsl-0.2.1.tgz"
+dsh plugin --profile web add "C:\work\dsh-wsl-bash\.packages\dsh-plugin-bash-wsl-0.2.2.tgz"
 ```
 
 Confirm that `Get-Command dsh` resolves the Windows installation. This command targets its `web` profile. Desktop owns a separate `desktop` profile: open **Settings → Plugins → Add Plugin** and select the same tarball there. Installing into `web` does not install into Desktop. Restart the relevant host and create a new conversation after installation. The package metadata loads `cordis.patch.yml`; keep the existing PowerShell bundle. A minimal isolated headless profile fragment is:
@@ -197,7 +201,7 @@ For Desktop, remove it through the Desktop plugin manager instead; do not substi
 
 | Symptom | Check |
 | --- | --- |
-| Plugin does not load | Confirm plugin `0.2.1`, Node `>=22`, and an actual host version of `0.2.1-rc.2`. Do not grant a version exemption to bypass the check. |
+| Plugin does not load | Confirm plugin `0.2.2`, Node `>=22`, and an actual host version of `0.2.1-rc.2`. Do not grant a version exemption to bypass the check. |
 | Works in CLI but absent in Desktop | `web` and `desktop` are separate profiles. Check the profile that the actual host loaded and restart it after installation. |
 | `workspace-write` is unavailable | Run `doctor`; install `bwrap`/`script` through the host's normal system procedure, then restart DSH. The plugin intentionally does not fall back to unrestricted execution. |
 | Path with spaces or Chinese characters fails | One-shot tools accept `workdir`; persistent `bash` accepts only `command`, so use a correctly quoted `cd` there. Respect the applicable workspace boundary. |

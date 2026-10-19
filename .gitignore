@@ -3,6 +3,7 @@ node_modules/
 测试/运行产物/
 dist/
 coverage/
+/unit-results.json
 *.tgz
 .DS_Store
 

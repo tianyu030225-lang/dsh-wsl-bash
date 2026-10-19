@@ -1,10 +1,46 @@
 # Changelog
 
+## 0.2.2 — 2026-10-19
+
+This release repairs the CI coverage gap found in the `0.2.1` workflow. The
+Ubuntu job passed 283 cases but intentionally skipped 24 Windows-only cases;
+the separate Windows job did not run those unit tests. Its real-CLI smoke
+stopped at startup, and job-level `continue-on-error` still allowed a green
+workflow. That result did not establish Windows compatibility or WSL safety.
+
+- Runs typechecking, the complete Vitest suite, build and package checks on
+  both Ubuntu and Windows. The Windows result must contain the PTY broker,
+  WSL prompt producer and preflight argument contracts, with no skipped or
+  todo cases; missing coverage now fails the job.
+- Replaces the informational WSL job with a required Windows job. It installs
+  Ubuntu 24.04 under WSL2 plus bubblewrap, util-linux and coreutils, then checks
+  that a real bubblewrap sandbox can start before running the probes.
+- Selects the exact locally installed DSH `0.2.1-rc.2` CLI and packs the fresh
+  `0.2.2` build. Both smoke suites receive that exact TGZ, whose SHA-256 is
+  logged. The test-only isolated profile and helper probes use the same WSL
+  distribution; production defaults and permission boundaries are unchanged.
+- Attempts the integration smoke even when the preceding security smoke fails,
+  provided package preparation succeeded. Uploads unit JSON, smoke diagnostic
+  JSON and the tested package even after a check fails, making startup and
+  capability failures inspectable. A required capability skip remains failure.
+- Updates CLI/Desktop qualification scripts and probe package metadata for
+  `0.2.2`, and corrects the documentation's distinction between automated CI
+  evidence and full Desktop/GUI release qualification. CI does not run those
+  interactive Desktop/GUI gates or publish to npm.
+- Restores the omitted `0.2.1` upgrade motivation below: compatibility with
+  the DSH host release that added DeepSeek-V4.1-Flash-1017 support.
+
 ## 0.2.1
 
 This security, reliability, and host-compatibility update keeps the same tool
 names, mode names, parameters, and permission model as `0.2.0`.
 
+- Upgrade motivation (added retrospectively in `0.2.2`): DeepSeek released
+  **DeepSeek-V4.1-Flash-1017**, and [DSH `0.2.1-rc.2`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.2)
+  added support for that model. Plugin `0.2.1` was updated to the corresponding
+  host contract so users upgrading DSH could retain the Windows WSL/Git Bash
+  tools. This is host compatibility, not a model performance benchmark or a
+  claim that the model requires this community plugin.
 - Targets the current Desktop and CLI DSH `0.2.1-rc.2` host contract exactly;
   earlier DSH builds remain on plugin `0.2.0` or `0.1.0` as documented.
 - Uses the host's `workingDirectory` service for persistent and one-shot shells,

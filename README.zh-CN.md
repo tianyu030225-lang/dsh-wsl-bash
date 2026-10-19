@@ -1,8 +1,8 @@
-# dsh-plugin-bash-wsl 0.2.1
+# dsh-plugin-bash-wsl 0.2.2
 
 [English](README.md)
 
-面向 Windows DSH 的原生 Git Bash 与 WSL 后端插件，当前版本为 `0.2.1`。桌面版与 CLI `0.2.1-rc.2` 共用同一个安装包。保留已有的 `pwsh` 工具，并为 Web/桌面版额外新增两个模式：
+面向 Windows DSH 的原生 Git Bash 与 WSL 后端插件，当前版本为 `0.2.2`。桌面版与 CLI `0.2.1-rc.2` 共用同一个安装包。保留已有的 `pwsh` 工具，并为 Web/桌面版额外新增两个模式：
 
 - **WSL 模式**（`bash-wsl`）：保留标准模式其他能力，默认使用按 Agent 隔离的持久 WSL `bash`；
 - **Git Bash 模式**（`bash-git-bash`）：保留标准模式其他能力，默认使用持久原生 Git Bash `bash`，需要当前会话明确选择完全权限。
@@ -11,18 +11,29 @@
 
 目标运行时为 Node.js `>=22`，只接受 DSH `0.2.1-rc.2`，不支持更早的 DSH；如需使用历史版本，请切换到对应标签查看说明。GitHub 源码公开与 npm 发布是两件事；当前尚未宣布 npm 发布，不要假定使用包名或未锁定的 `latest` 就能安装到本仓库的当前内容。
 
-默认分支介绍当前 `0.2.1` 发布源码。历史版本继续保留在标签中：上一版使用 `v0.2.0`，只有 DSH `0.1.0-rc.6` 才使用 `v0.1.0`。
+默认分支介绍当前 `0.2.2` 源码。历史标签和报告只对应各自的修订；`v0.1.0` 面向 DSH `0.1.0-rc.6`。
 
-公开的回归源码、smoke 脚本及夹具统一放在 [`dev/测试/`](dev/测试/)。历史运行产物仍保留在已忽略的根目录 `测试/运行产物/`，不进入 Git 或 npm 包。`0.2.1` 报告记录本次重新执行的测试、构建与发布门禁；旧报告只证明其明确绑定的历史制品。
+公开的回归源码、smoke 脚本及夹具统一放在 [`dev/测试/`](dev/测试/)。本地运行产物保留在已忽略的根目录 `测试/运行产物/`，不进入 Git 或 npm 包。CI 将单元测试结果、smoke 诊断 JSON 和实际测试的 TGZ 上传为 Actions 产物。
 
-## 0.2.1 兼容性与发布证据
+### 为什么更新到 0.2.2
+
+旧 CI 在 Ubuntu 上通过了 283 项测试，并按设计跳过 24 项 Windows 专用测试；但 Windows 任务没有执行单元测试，真实 CLI 探测又在启动阶段停止。由于任务允许失败，整体仍显示绿色，因此无法证明 Windows 功能和 WSL 安全探测通过。
+
+- 现在 Ubuntu 和 Windows 都执行类型检查、全部单元测试、构建和打包检查；Windows 不允许跳过或遗漏所需测试。
+- 真实探测任务主动准备 WSL2、Ubuntu 24.04、`bwrap`、`script` 和 `realpath`，使用锁定的 DSH CLI 与本次构建的准确安装包。必要能力缺失或探测失败会使 CI 失败。
+- 即使安全探测失败，只要安装包已准备好，仍继续尝试集成探测；失败时也上传诊断 JSON、测试结果和候选安装包，便于定位具体原因。
+- 同步更新 CLI/桌面版发布验证脚本中的插件版本，保留 DSH `0.2.1-rc.2` 的准确宿主约束。
+
+**补充 0.2.1 遗漏的更新原因：** DeepSeek 发布了 **DeepSeek-V4.1-Flash-1017**，官方 [DSH `0.2.1-rc.2`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.2) 增加了该模型的支持。因此，插件 `0.2.1` 同步适配了对应 DSH 宿主，方便升级 DSH 后继续使用 Windows 的 WSL/Git Bash 工具。这是宿主兼容适配，不代表该模型必须依赖本插件，也没有宣称未经测试的性能提升。
+
+## 0.2.2 兼容性与发布证据
 
 | 宿主 | 支持的 DSH 版本 |
 | --- | --- |
 | 桌面版 | `0.2.1-rc.2` |
 | CLI | `0.2.1-rc.2` |
 
-`0.2.1` 发布报告只对应一份由完整 SHA-256 标识的冻结候选包。[0.2.0 双宿主报告](docs/testing-report-0.2.0.md)只作为 `v0.2.0` 的历史证据保留。同名文件或相同版本号不等于同一份已测制品。安装时应选择目标源码修订自行构建，或使用明确发布且附有校验值的 Release 附件。
+自动 CI 覆盖 Ubuntu/Windows 单元测试及真实 Windows CLI/WSL 安全、集成探测。绿色 CI 不等于完成桌面版/GUI 全量验收；`scripts/release-check.mjs` 中的交互验收仍需独立的新证据，这里不宣称 `0.2.2` 已通过完整桌面版/GUI 门禁。[0.2.0 双宿主报告](docs/testing-report-0.2.0.md)只对应 `v0.2.0` 的历史制品。每份结果都必须核对源码修订与准确 TGZ 的 SHA-256，同名文件或相同版本号不能证明是同一份已测制品。
 
 > **非官方社区项目。** 本插件是独立、社区维护的扩展，**与 DeepSeek 无隶属、背书或赞助关系**。"DeepSeek Harness"与"DSH"为其各自所有者的商标。插件使用官方公开服务与依赖；本插件的任何缺陷、安全问题或行为变更均由本仓库负责，与 DeepSeek 或 DSH 项目无关。
 
@@ -54,7 +65,7 @@ Git Bash restricted 模式失败关闭：被拒绝的命令启动零进程。一
 
 Git 不包含 `dist/` 和生成的 TGZ。GitHub 源码 ZIP 不是可直接安装的 DSH 插件包；检出目录中遗留的旧同名 TGZ 也不能当成后续版本使用。
 
-构建 `0.2.1` 源码需要 Windows Node.js `>=22`，以及 `package.json` 指定的 `pnpm@11.21.0`。克隆本仓库、选择要安装的源码修订后，在该检出目录中使用 Windows PowerShell 执行：
+构建 `0.2.2` 源码需要 Windows Node.js `>=22`，以及 `package.json` 指定的 `pnpm@11.21.0`。克隆本仓库、选择要安装的源码修订后，在该检出目录中使用 Windows PowerShell 执行：
 
 ```powershell
 pnpm install --frozen-lockfile
@@ -62,7 +73,7 @@ New-Item -ItemType Directory -Force -Path ".packages" | Out-Null
 pnpm pack --pack-destination ".packages"
 ```
 
-现有 `prepack` 会执行 `pnpm run build`，只清理和重建当前检出目录的 `dist/`；源码构建时不要省略开发依赖。生成的 `0.2.1` 安装包位于 `.packages/dsh-plugin-bash-wsl-0.2.1.tgz`，正式发布时应同时提供该包的校验值。这些是构建步骤，不代表新生成的包已经通过完整门禁。
+现有 `prepack` 会执行 `pnpm run build`，只清理和重建当前检出目录的 `dist/`；源码构建时不要省略开发依赖。生成的 `0.2.2` 安装包位于 `.packages/dsh-plugin-bash-wsl-0.2.2.tgz`，正式发布时应同时提供该包的校验值。这些是构建步骤，不代表新生成的包已经通过完整门禁。
 
 `file:` 或 hoisted 本地安装得到的是部署副本或硬链接；即使当前检出目录完成 clean rebuild，profile 中已安装文件的 inode 也可能没有更新。因此，只重建或只重启不能证明宿主已加载新代码。必须把新 TGZ 重新安装到准确的目标或隔离 profile，核对运行时 `installAnchor`，并比较已安装 `dist` 与当前构建的哈希。`link:` 只适合经过明确核验的本地开发，不能充当发布证据。
 
@@ -74,7 +85,7 @@ pnpm pack --pack-destination ".packages"
 
 ```powershell
 Get-Command dsh
-dsh plugin --profile web add "C:\work\dsh-wsl-bash\.packages\dsh-plugin-bash-wsl-0.2.1.tgz"
+dsh plugin --profile web add "C:\work\dsh-wsl-bash\.packages\dsh-plugin-bash-wsl-0.2.2.tgz"
 ```
 
 确认 `Get-Command dsh` 命中 Windows 安装入口。该命令针对其 `web` 配置；桌面版使用独立的 `desktop` 配置，请在 **设置 → 插件 → 添加插件** 中选择同一个 TGZ。装到 `web` 不等于装到桌面版。安装后重启对应宿主并新建会话。包元数据会加载 `cordis.patch.yml`；请保留已有 PowerShell bundle。最小隔离 headless 配置片段是：
@@ -186,7 +197,7 @@ dsh plugin --profile web remove dsh-plugin-bash-wsl
 
 | 现象 | 检查 |
 | --- | --- |
-| 插件不加载 | 确认插件为 `0.2.1`、Node `>=22`，实际宿主为 `0.2.1-rc.2`；不要忽略版本检查。 |
+| 插件不加载 | 确认插件为 `0.2.2`、Node `>=22`，实际宿主为 `0.2.1-rc.2`；不要忽略版本检查。 |
 | CLI 可用但桌面版没有 | `web` 与 `desktop` 配置独立，确认真正运行的宿主加载了目标配置，安装后重启对应宿主。 |
 | `workspace-write` 不可用 | 运行 `doctor`；由宿主的正常系统流程安装 `bwrap`/`script` 后重启 DSH。插件不会降级到不受限执行。 |
 | 空格或中文路径失败 | 一次性工具可传 `workdir`；持久 `bash` 只接受 `command`，应在命令中使用正确引用的 `cd`，并遵守对应工作区边界。 |

@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-bash-wsl",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Native Git Bash and sandboxed WSL execution backends for DeepSeek Harness on Windows",
   "repository": {
     "type": "git",
