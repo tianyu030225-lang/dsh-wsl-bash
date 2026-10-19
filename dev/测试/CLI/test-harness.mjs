@@ -42,7 +42,7 @@ export const WINDOWS_CLI_ENTRY_DEFAULT = WINDOWS_USER_PROFILE === undefined
   : `${WINDOWS_USER_PROFILE}\\AppData\\Roaming\\npm\\node_modules\\@deepseek-ai\\dsh\\lib\\bin.js`;
 export const WINDOWS_NODE_DEFAULT = "node.exe";
 export const EXPECTED_CLI_VERSION = "0.2.1-rc.2";
-export const EXPECTED_PLUGIN_VERSION = "0.2.1";
+export const EXPECTED_PLUGIN_VERSION = "0.2.2";
 export const MAX_CHILD_OUTPUT_BYTES = 2 * 1024 * 1024;
 // Test-only override applied inside each isolated profile.  Production plugin
 // files and the source patch remain untouched; this makes the persistent-shell
@@ -501,16 +501,16 @@ export function resolvePluginTgz() {
   const candidates = candidateRoots.flatMap((root) => {
     if (!existsSync(root)) return [];
     return readdirSync(root, { withFileTypes: true })
-      .filter((entry) => entry.isFile() && /^dsh-plugin-bash-wsl-0\.2\.1(?:-[^/]*)?\.tgz$/i.test(entry.name))
+      .filter((entry) => entry.isFile() && /^dsh-plugin-bash-wsl-0\.2\.2(?:-[^/]*)?\.tgz$/i.test(entry.name))
       .map((entry) => join(root, entry.name));
   });
   if (candidates.length === 0) {
-    throw new SkipError("no dsh-plugin-bash-wsl-0.2.1 TGZ; set DSH_PLUGIN_TGZ to the built package");
+    throw new SkipError("no dsh-plugin-bash-wsl-0.2.2 TGZ; set DSH_PLUGIN_TGZ to the built package");
   }
   const newest = candidates
     .map((path) => ({ path, mtimeMs: statSync(path).mtimeMs }))
     .sort((left, right) => right.mtimeMs - left.mtimeMs)[0]?.path;
-  if (newest === undefined) throw new SkipError("no readable dsh-plugin-bash-wsl-0.2.1 TGZ");
+  if (newest === undefined) throw new SkipError("no readable dsh-plugin-bash-wsl-0.2.2 TGZ");
   return toWindowsPath(newest);
 }
 
@@ -539,12 +539,17 @@ function configureIsolatedPersistentTimeout(context, oneShotLimits = undefined) 
     "  config:",
     "    backendType: wsl",
     `    timeoutMs: ${TEST_PERSISTENT_TIMEOUT_MS}`,
-    ...(oneShotLimits === undefined ? [] : [
+    ...((oneShotLimits === undefined && process.env.DSH_WSL_DISTRO === undefined) ? [] : [
       "- id: bash-wsl-backend-and-tools",
       "  config:",
       "    backendType: wsl",
-      "    oneShotMaxOutputBytes: " + oneShotLimits.memoryLimit,
-      "    oneShotMaxSpillBytes: " + oneShotLimits.spillLimit,
+      ...(process.env.DSH_WSL_DISTRO === undefined ? [] : [
+        `    distro: ${JSON.stringify(process.env.DSH_WSL_DISTRO)}`,
+      ]),
+      ...(oneShotLimits === undefined ? [] : [
+        "    oneShotMaxOutputBytes: " + oneShotLimits.memoryLimit,
+        "    oneShotMaxSpillBytes: " + oneShotLimits.spillLimit,
+      ]),
     ]),
     "",
   ].join("\n");
@@ -727,6 +732,7 @@ export async function runProbe(
     env: {
       DSH_PROBE_SUITE: suite,
       DSH_PERMISSION_MODE: mode,
+      ...(process.env.DSH_WSL_DISTRO === undefined ? {} : { DSH_WSL_DISTRO: process.env.DSH_WSL_DISTRO }),
       ...(persistentShell === undefined
         ? {}
         : { DSH_PERSISTENT_SHELL: persistentShell }),

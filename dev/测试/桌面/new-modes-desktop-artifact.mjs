@@ -43,7 +43,7 @@ const ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const TEST_ROOT = join(ROOT, "测试");
 const RUN_ROOT = join(TEST_ROOT, "运行产物");
 const EXPECTED_DESKTOP_VERSION = "0.2.1-rc.2";
-const EXPECTED_PLUGIN_VERSION = "0.2.1";
+const EXPECTED_PLUGIN_VERSION = "0.2.2";
 const EXPECTED_MODE_IDS = ["bash-wsl", "bash-git-bash"];
 const EXPECTED_MODE_NAMES = {
   "bash-wsl": "WSL 模式",

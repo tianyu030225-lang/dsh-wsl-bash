@@ -42,7 +42,7 @@ const ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const TEST_ROOT = join(ROOT, "测试");
 const RUN_ROOT = join(TEST_ROOT, "运行产物");
 const EXPECTED_DESKTOP_VERSION = "0.2.1-rc.2";
-const EXPECTED_PLUGIN_VERSION = "0.2.1";
+const EXPECTED_PLUGIN_VERSION = "0.2.2";
 const EXPECTED_TOOLS = ["bash", "wsl_bash", "git_bash"];
 const DESKTOP_PEER_PACKAGES = {
   "@deepseek-ai/cordis": new Set(["4.0.5"]),
@@ -1959,7 +1959,7 @@ async function main() {
   const report = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
-    target: "Desktop 0.2.1-rc.2 / plugin 0.2.1",
+    target: "Desktop 0.2.1-rc.2 / plugin 0.2.2",
     checks: [],
     phases: [],
     cleanup: {},
@@ -2123,7 +2123,7 @@ async function main() {
     const installedOk = existsSync(installedPackage) && jsonFile(installedPackage).version === EXPECTED_PLUGIN_VERSION;
     addCheck(report, "desktop-profile:offline-install", installedOk ? "PASS" : "FAIL", installedOk
       ? "local TGZ is installed in the isolated desktop profile"
-      : "isolated profile did not contain dsh-plugin-bash-wsl@0.2.1 after install", {
+      : "isolated profile did not contain dsh-plugin-bash-wsl@0.2.2 after install", {
       packagePath: "profiles/desktop/node_modules/dsh-plugin-bash-wsl/package.json",
       installer: "bundled Desktop pnpm with isolated store/cache (no legacy-peer-deps)",
       closeObserved: install.cleanup?.closeObserved ?? false,
@@ -2473,7 +2473,7 @@ async function run() {
     report = {
       schemaVersion: 1,
       generatedAt: new Date().toISOString(),
-      target: "Desktop 0.2.1-rc.2 / plugin 0.2.1",
+      target: "Desktop 0.2.1-rc.2 / plugin 0.2.2",
       checks: [{ id: "desktop-probe:uncaught", status: "FAIL", detail: sanitize(error) }],
       phases: [],
       cleanup: {},

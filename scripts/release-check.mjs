@@ -34,7 +34,7 @@ const root = resolve(import.meta.dirname, "..");
 const packageJsonPath = join(root, "package.json");
 const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
 const expectedName = "dsh-plugin-bash-wsl";
-const expectedVersion = "0.2.1";
+const expectedVersion = "0.2.2";
 const expectedCliVersion = "0.2.1-rc.2";
 const expectedSecurityModes = ["read-only", "workspace-write", "danger-full-access"];
 const requiredSecurityCheckIds = [
@@ -2260,7 +2260,7 @@ try {
         ?? desktopEvidence?.probeIdentity?.installedProbeObserverSha256,
       probeObserverHashesMatch: desktopEvidence?.probeIdentity?.probeObserverHashesMatch,
     }, sourceProbeIndexSha256);
-    const desktopRuntimeOk = desktopEvidence?.target === "Desktop 0.2.1-rc.2 / plugin 0.2.1"
+    const desktopRuntimeOk = desktopEvidence?.target === "Desktop 0.2.1-rc.2 / plugin 0.2.2"
       && desktopTopChecks.find((check) => check?.id === "desktop-runtime:version")?.status === "PASS";
     const desktopApprovalVariantOk = desktopEvidence?.approvalVariant?.mode === "no-remote-answerer"
       && desktopEvidence?.approvalVariant?.disabled === true
@@ -2367,7 +2367,7 @@ try {
       && desktopCapPhase?.close?.kill?.closeObserved === true
       && desktopCapPhase?.close?.kill?.reaped === true
       && desktopCapPhase?.close?.kill?.aliveAfter === false;
-    const desktopCapHostOk = desktopCapEvidence?.target === "Desktop 0.2.1-rc.2 / plugin 0.2.1"
+    const desktopCapHostOk = desktopCapEvidence?.target === "Desktop 0.2.1-rc.2 / plugin 0.2.2"
       && desktopCapEvidence?.package?.tgzSha256 === fileSha256(securityTgz)
       && probeIdentityIsClean({
         probeSourceIndexSha256: desktopCapEvidence?.probeIdentity?.sourceProbeIndexSha256,

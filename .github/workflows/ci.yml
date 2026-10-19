@@ -4,11 +4,22 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   quality:
-    name: Typecheck / Tests / Build
-    runs-on: ubuntu-latest
+    name: Typecheck / Tests / Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      DSH_WSL_DISTRO: Ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -27,8 +38,21 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
+      # preflight-argv is a real WSL check despite living in the unit suite.
+      - name: Prepare WSL for Windows preflight test
+        if: runner.os == 'Windows'
+        uses: Vampire/setup-wsl@4c48163d9f981914dd8caa0fc335fe19cca5bff4 # v7.2.0
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          additional-packages: bubblewrap util-linux coreutils
+
       - name: Tests
-        run: pnpm test
+        run: pnpm exec vitest run --reporter=default --reporter=json --outputFile=unit-results.json
+
+      - name: Verify Windows tests were executed
+        if: runner.os == 'Windows'
+        run: node scripts/check-windows-tests.mjs unit-results.json
 
       - name: Build
         run: pnpm run build
@@ -36,13 +60,22 @@ jobs:
       - name: Pack check
         run: npm pack --dry-run --ignore-scripts
 
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-results-${{ matrix.os }}
+          path: |
+            unit-results.json
+            测试/运行产物/preflight-argv-*.json
+          if-no-files-found: warn
+
   real-wsl:
-    name: Real-WSL security probe (informational)
-    runs-on: windows-latest
-    # WSL availability on GitHub Windows runners is not guaranteed; this job
-    # reports the real security probe result when a distro is present and
-    # never blocks the merge gate on runner environment flakiness.
-    continue-on-error: true
+    name: Real WSL / CLI security and integration
+    runs-on: windows-2025
+    timeout-minutes: 30
+    env:
+      DSH_WSL_DISTRO: Ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -61,18 +94,48 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Enable WSL (best effort)
+      - name: Install WSL2 and sandbox dependencies
+        uses: Vampire/setup-wsl@4c48163d9f981914dd8caa0fc335fe19cca5bff4 # v7.2.0
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          additional-packages: bubblewrap util-linux coreutils
+
+      - name: Check real sandbox capability
         shell: pwsh
         run: |
-          wsl --status 2>$null
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "WSL not installed; probe will be skipped."
-          }
+          wsl --list --verbose
+          wsl -d $env:DSH_WSL_DISTRO --exec /bin/bash --noprofile --norc -c 'set -eu; command -v bwrap; command -v script; command -v realpath; bwrap --ro-bind / / --dev /dev --proc /proc -- /bin/true'
+          if ($LASTEXITCODE -ne 0) { throw "Required WSL sandbox capability is unavailable" }
+
+      - name: Prepare exact CLI and plugin package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path .packages | Out-Null
+          npm pack --ignore-scripts --pack-destination .packages
+          if ($LASTEXITCODE -ne 0) { throw "Plugin packaging failed" }
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          "DSH_PLUGIN_TGZ=$((Resolve-Path ".packages/dsh-plugin-bash-wsl-$version.tgz").Path)" >> $env:GITHUB_ENV
+          "DSH_WINDOWS_CLI_PACKAGE=$((Resolve-Path 'node_modules/@deepseek-ai/dsh/package.json').Path)" >> $env:GITHUB_ENV
+          "DSH_WINDOWS_CLI_ENTRY=$((Resolve-Path 'node_modules/@deepseek-ai/dsh/lib/bin.js').Path)" >> $env:GITHUB_ENV
+          Get-FileHash ".packages/dsh-plugin-bash-wsl-$version.tgz" -Algorithm SHA256
 
       - name: Real security probe (PTY geometry + interop escape)
         shell: pwsh
         run: node dev/测试/smoke/security-probe.mjs
 
       - name: Official-tool protocol integration smoke
+        if: ${{ !cancelled() && env.DSH_PLUGIN_TGZ != '' }}
         shell: pwsh
         run: node dev/测试/smoke/integration.mjs
+
+      - name: Upload smoke diagnostics and candidate
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-wsl-evidence
+          path: |
+            测试/运行产物/**/*.json
+            .packages/*.tgz
+          include-hidden-files: true
+          if-no-files-found: warn

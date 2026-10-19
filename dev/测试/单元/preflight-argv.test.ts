@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const WSL_EXECUTABLE = "C:\\Windows\\System32\\wsl.exe";
-const DISTRO = "Ubuntu";
+const DISTRO = process.env.DSH_WSL_DISTRO ?? "Ubuntu";
 const DEADLINE_MS = 20_000;
 const ARTIFACT_ROOT = resolve(process.cwd(), "测试", "运行产物");
 const LOG_PATH = resolve(ARTIFACT_ROOT, "preflight-argv-20261009.json");
@@ -132,6 +132,14 @@ describe("Windows WSL preflight argv comparison", () => {
       RESTRICTED_ENV_SCRIPT,
     ]);
 
+    // Preserve launch diagnostics before asserting, including on CI failures.
+    mkdirSync(ARTIFACT_ROOT, { recursive: true });
+    writeFileSync(
+      LOG_PATH,
+      JSON.stringify({ executable: WSL_EXECUTABLE, distro: DISTRO, probeScript: PROBE_SCRIPT, direct, exec, restricted }, null, 2),
+      "utf8",
+    );
+
     expect(direct.argv.slice(0, 3)).toEqual(["-d", DISTRO, "--"]);
     expect(exec.argv.slice(0, 3)).toEqual(["-d", DISTRO, "--exec"]);
     expect(direct.argv.slice(3)).toEqual(exec.argv.slice(3));
@@ -148,12 +156,7 @@ describe("Windows WSL preflight argv comparison", () => {
     expect(exec.reaped).toBe(true);
     expect(restricted.reaped).toBe(true);
 
-    mkdirSync(ARTIFACT_ROOT, { recursive: true });
-    writeFileSync(
-      LOG_PATH,
-      JSON.stringify({ executable: WSL_EXECUTABLE, distro: DISTRO, probeScript: PROBE_SCRIPT, direct, exec, restricted }, null, 2),
-      "utf8",
-    );
     },
+    3 * (DEADLINE_MS + 2_000) + 5_000,
   );
 });
