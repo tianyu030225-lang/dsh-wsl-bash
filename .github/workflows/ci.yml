@@ -18,6 +18,8 @@ jobs:
         os: [ubuntu-latest, windows-2025]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    env:
+      DSH_WSL_DISTRO: Ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -35,6 +37,15 @@ jobs:
 
       - name: Typecheck
         run: pnpm run typecheck
+
+      # preflight-argv is a real WSL check despite living in the unit suite.
+      - name: Prepare WSL for Windows preflight test
+        if: runner.os == 'Windows'
+        uses: Vampire/setup-wsl@4c48163d9f981914dd8caa0fc335fe19cca5bff4 # v7.2.0
+        with:
+          distribution: Ubuntu-24.04
+          wsl-version: 2
+          additional-packages: bubblewrap util-linux coreutils
 
       - name: Tests
         run: pnpm exec vitest run --reporter=default --reporter=json --outputFile=unit-results.json
@@ -54,7 +65,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: unit-results-${{ matrix.os }}
-          path: unit-results.json
+          path: |
+            unit-results.json
+            测试/运行产物/preflight-argv-*.json
           if-no-files-found: warn
 
   real-wsl:

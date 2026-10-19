@@ -12,6 +12,10 @@ workflow. That result did not establish Windows compatibility or WSL safety.
   both Ubuntu and Windows. The Windows result must contain the PTY broker,
   WSL prompt producer and preflight argument contracts, with no skipped or
   todo cases; missing coverage now fails the job.
+- Provisions WSL for the Windows unit job too: the existing preflight argv
+  case actually executes WSL rather than mocking it. It now respects the
+  selected test distribution, saves diagnostics before assertions, and has a
+  test timeout that accommodates its three bounded subprocess probes.
 - Replaces the informational WSL job with a required Windows job. It installs
   Ubuntu 24.04 under WSL2 plus bubblewrap, util-linux and coreutils, then checks
   that a real bubblewrap sandbox can start before running the probes.
