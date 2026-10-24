@@ -7,7 +7,7 @@ import type { SubprocessRuntime } from "@deepseek-ai/dsh-subprocess";
 
 import { runSubprocessForeground } from "../../../src/tools/process.js";
 
-const HOST_VERSION = "0.2.1-rc.2";
+const HOST_VERSION = "0.2.1-rc.3";
 
 type OutputCollectorLike = {
   push(chunk: Buffer): void;
@@ -22,7 +22,7 @@ type OutputCollectorLike = {
 async function loadCurrentHostOutputCollector(): Promise<
   new (maxBytes: number, label: string, spill?: unknown) => OutputCollectorLike
 > {
-  // Resolve through the installed rc.2 host anchor and its package graph. Do
+  // Resolve through the installed rc.3 host anchor and its package graph. Do
   // not pick the first similarly named .pnpm directory: the tree also carries
   // a second dsh-subprocess peer instance without the local collector.
   const installAnchor = realpathSync(join(

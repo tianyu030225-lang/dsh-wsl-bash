@@ -28,7 +28,7 @@ function writeText(path: string, text: string): void {
   writeFileSync(path, text, "utf8");
 }
 
-function createHostAnchor(version = "0.2.1-rc.2"): string {
+function createHostAnchor(version = "0.2.1-rc.3"): string {
   mkdirSync(artifactRoot, { recursive: true });
   const root = mkdtempSync(join(artifactRoot, "unit-mode-host-"));
   temporaryRoots.push(root);
@@ -84,7 +84,7 @@ function createHostPresetFixture(): {
 
   writeJson(join(root, "node_modules", "@deepseek-ai", "dsh", "package.json"), {
     name: "@deepseek-ai/dsh",
-    version: "0.2.1-rc.2",
+    version: "0.2.1-rc.3",
   });
   writeJson(join(root, "node_modules", "@deepseek-ai", "cordis-plugin-include", "package.json"), {
     name: "@deepseek-ai/cordis-plugin-include",
@@ -98,7 +98,7 @@ function createHostPresetFixture(): {
   );
   writeJson(join(root, "node_modules", "@deepseek-ai", "dsh-agent-preset-registry", "package.json"), {
     name: "@deepseek-ai/dsh-agent-preset-registry",
-    version: "0.2.1-rc.2",
+    version: "0.2.1-rc.3",
     type: "module",
     exports: { ".": "./index.js" },
   });
@@ -127,7 +127,7 @@ function createHostPresetFixture(): {
   );
   writeJson(join(root, "node_modules", "@deepseek-ai", "dsh-web-app", "package.json"), {
     name: "@deepseek-ai/dsh-web-app",
-    version: "0.2.1-rc.2",
+    version: "0.2.1-rc.3",
   });
   writeText(
     join(root, "node_modules", "@deepseek-ai", "dsh-web-app", "presets", "standard.patch.yml"),
@@ -175,7 +175,7 @@ describe("mode configuration contract", () => {
 });
 
 describe("official persistent Bash backend injection contract", () => {
-  it("declares every service required by the installed rc.2 official backend", async () => {
+  it("declares every service required by the installed rc.3 official backend", async () => {
     const anchor = realpathSync.native(
       resolve(process.cwd(), "node_modules", "@deepseek-ai", "dsh", "package.json"),
     );
@@ -333,7 +333,7 @@ describe("host Standard composition and shell mode registration", () => {
     for (const disposer of disposers) expect(disposer).toHaveBeenCalledOnce();
   });
 
-  it("parses the installed rc.2 Standard patch with official js-yaml/!!js and preserves the full plugin tree", async () => {
+  it("parses the installed rc.3 Standard patch with official js-yaml/!!js and preserves the full plugin tree", async () => {
     const anchor = realpathSync.native(
       resolve(process.cwd(), "node_modules", "@deepseek-ai", "dsh", "package.json"),
     );

@@ -41,8 +41,8 @@ export const WINDOWS_CLI_ENTRY_DEFAULT = WINDOWS_USER_PROFILE === undefined
   ? ""
   : `${WINDOWS_USER_PROFILE}\\AppData\\Roaming\\npm\\node_modules\\@deepseek-ai\\dsh\\lib\\bin.js`;
 export const WINDOWS_NODE_DEFAULT = "node.exe";
-export const EXPECTED_CLI_VERSION = "0.2.1-rc.2";
-export const EXPECTED_PLUGIN_VERSION = "0.2.2";
+export const EXPECTED_CLI_VERSION = "0.2.1-rc.3";
+export const EXPECTED_PLUGIN_VERSION = "0.2.3";
 export const MAX_CHILD_OUTPUT_BYTES = 2 * 1024 * 1024;
 // Test-only override applied inside each isolated profile.  Production plugin
 // files and the source patch remain untouched; this makes the persistent-shell
@@ -220,7 +220,7 @@ export function assertWindowsCliAvailable() {
   }
   const entryPath = toLocalPath(entryWindowsPath);
   if (!existsSync(packagePath) || !existsSync(entryPath)) {
-    throw new SkipError("Windows CLI 0.2.1-rc.2 package or entry was not found");
+    throw new SkipError("Windows CLI 0.2.1-rc.3 package or entry was not found");
   }
   const manifest = JSON.parse(readFileSync(packagePath, "utf8"));
   if (manifest.name !== "@deepseek-ai/dsh") {
@@ -505,12 +505,12 @@ export function resolvePluginTgz() {
       .map((entry) => join(root, entry.name));
   });
   if (candidates.length === 0) {
-    throw new SkipError("no dsh-plugin-bash-wsl-0.2.2 TGZ; set DSH_PLUGIN_TGZ to the built package");
+    throw new SkipError("no dsh-plugin-bash-wsl-0.2.3 TGZ; set DSH_PLUGIN_TGZ to the built package");
   }
   const newest = candidates
     .map((path) => ({ path, mtimeMs: statSync(path).mtimeMs }))
     .sort((left, right) => right.mtimeMs - left.mtimeMs)[0]?.path;
-  if (newest === undefined) throw new SkipError("no readable dsh-plugin-bash-wsl-0.2.2 TGZ");
+  if (newest === undefined) throw new SkipError("no readable dsh-plugin-bash-wsl-0.2.3 TGZ");
   return toWindowsPath(newest);
 }
 
