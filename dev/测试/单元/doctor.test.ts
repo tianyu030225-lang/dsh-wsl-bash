@@ -38,7 +38,7 @@ describe("doctor backend independence", () => {
 
     const report = await runDoctor({
       platform: "win32",
-      dshVersion: "0.2.1-rc.2",
+      dshVersion: "0.2.1-rc.3",
       wslExecutable: "C:\\Windows\\System32\\wsl.exe",
       distro: "Ubuntu",
       workspaceRoot: "C:\\Users\\Alice\\work\\dsh_bash",
@@ -77,7 +77,7 @@ describe("doctor backend independence", () => {
 
       const report = await runDoctor({
         platform: "win32",
-        dshVersion: "0.2.1-rc.2",
+        dshVersion: "0.2.1-rc.3",
         wslExecutable: "C:\\Windows\\System32\\wsl.exe",
         distro,
         workspaceRoot: "C:\\workspace",
@@ -119,7 +119,7 @@ describe("doctor backend independence", () => {
 
     const report = await runDoctor({
       platform: "win32",
-      dshVersion: "0.2.1-rc.2",
+      dshVersion: "0.2.1-rc.3",
       wslExecutable: "C:\\Windows\\System32\\wsl.exe",
       distro: "Ubuntu",
       workspaceRoot: "C:\\Users\\Alice\\work\\dsh_bash",

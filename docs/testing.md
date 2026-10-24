@@ -1,6 +1,6 @@
 # Test and security regression matrix
 
-Public test sources are grouped in `dev/测试/`: `单元/`, `CLI/`, `桌面/`, `smoke/`, and `fixtures/`. The ignored root `测试/运行产物/` remains the data location so historical evidence is not relocated or rewritten. Historical reports retain their original source paths and hashes; they certify only their named candidates. The `0.2.1` report records the current source, build, artifact and host evidence.
+Public test sources are grouped in `dev/测试/`: `单元/`, `CLI/`, `桌面/`, `smoke/`, and `fixtures/`. The ignored root `测试/运行产物/` remains the data location so historical evidence is not relocated or rewritten. Historical reports retain their original source paths and hashes; they certify only their named candidates. Reports for `0.2.0` and `0.2.1` remain historical. Plugin `0.2.3` needs fresh source, build, artifact and rc.3 host evidence; no earlier PASS qualifies it.
 
 The test suite is intentionally split into deterministic unit/contract tests and conditional Windows/WSL integration tests. A skipped integration test must state the missing capability (for example `Git Bash executable not found` or `bwrap unavailable`) and is not a pass.
 
@@ -8,7 +8,7 @@ The test suite is intentionally split into deterministic unit/contract tests and
 
 | Area | Regression assertion |
 | --- | --- |
-| Configuration | Plugin `0.2.1` with exact Desktop or CLI DSH `0.2.1-rc.2`, Node `>=22`, Ubuntu and clean Bash defaults; malformed configuration fails before execution. |
+| Configuration | Plugin `0.2.3` with exact Desktop or CLI DSH `0.2.1-rc.3`, Node `>=22`, Ubuntu and clean Bash defaults; malformed configuration fails before execution. |
 | Actual host identity | Read `profileContext.installAnchor`, reject missing/relative/invalid anchors and unsupported versions even when a supported peer package exists nearby. |
 | System instructions | Exactly one official prompt section, ordered after `TOOL_BASH`, interpolation disabled, no personal data; unload removes it and reload does not duplicate it. |
 | Git Bash discovery | Deterministic configured/path/default priority; reject UNC, device namespace, directories, and non-executable candidates. |
@@ -36,7 +36,7 @@ The test suite is intentionally split into deterministic unit/contract tests and
 | Preset retirement | Removing the plugin's definitions prevents new selections. Official live-agent revision retention is not scope disposal: release all owned agents/leases, then verify no retained plugin composition, tool, prompt, terminal or process remains. Unrelated stock compositions must survive. |
 | Doctor/release | Doctor is read-only/no-install. Standalone package discovery is distinct from actual-host anchor discovery. Verify clean-Bash `script`, trusted `SHELL`, `WSL_UTF8=1`, a non-ASCII distribution name, the selected distribution's authoritative direct launch, defaults/environment overrides, invalid anchors and dependencies. Release checks audit the tarball and isolated installs without mutating real profiles. |
 | CLI runtime | Invoke the actual Windows CLI and its official tool/registry services with the mounted plugin in an isolated `DSH_HOME`, not a hand-written test mirror of the tool protocol. |
-| Desktop runtime | Invoke the actual installed Electron/ASAR runtime with a separate isolated Desktop profile; source snapshots and CLI help are not Desktop activation evidence. Record GUI observations separately from programmatic checks. The probe source/installed `index.mjs` SHA-256 values must match the current source fixture, and real agents must resolve/mount the rc.2 `standard` preset with initialized permission metadata. D-14's independent required item is old-version runtime rejection: run the preserved 0.1.0 TGZ through actual rc.2 `loadProfileDirectory` without dependency installation, then the same owned profile through `runProfile`/Host initialization; require rc.6 peer rejection, old-layer omission, strict child/identity/cleanup evidence, and absent old tools/prompt. Ordinary old-version pnpm cache diagnostics remain SKIP and are not evidence for compatibility; missing/malformed TGZ typed rejection and cleanup remain hard checks. |
+| Desktop runtime | Invoke the actual installed Electron/ASAR runtime with a separate isolated Desktop profile; source snapshots and CLI help are not Desktop activation evidence. Record GUI observations separately from programmatic checks. The probe source/installed `index.mjs` SHA-256 values must match the current source fixture, and real agents must resolve/mount the rc.3 `standard` preset with initialized permission metadata. D-14's independent required item is old-version runtime rejection: run the preserved 0.1.0 TGZ through actual rc.3 `loadProfileDirectory` without dependency installation, then the same owned profile through `runProfile`/Host initialization; require rc.6 peer rejection, old-layer omission, strict child/identity/cleanup evidence, and absent old tools/prompt. Ordinary old-version pnpm cache diagnostics remain SKIP and are not evidence for compatibility; missing/malformed TGZ typed rejection and cleanup remain hard checks. |
 
 ## Test seam expectations
 
@@ -54,7 +54,7 @@ GUI acceptance is separate from the actual Desktop Host's background tests. For 
 
 The owned-session driver first explicitly applies and reads back `workspace-write`. Native Git testing additionally requires an explicit human test grant (`DSH_GUI_ALLOW_GIT_FULL_ACCESS=1`) before launch; it then applies and reads back `danger-full-access` for that session only. Permission-command acknowledgement and the pre-prompt projection must match. Mode selection, a remembered profile default, or one-shot approval cannot provide this grant. Do not change global permission settings or user profiles.
 
-In Desktop rc.2, clicking the window's X hides it to the tray. Normal-exit acceptance requires the tray's **Quit DeepSeek Harness** action (or the application's Exit action), followed by successful PID/creation-time and owned WSL-ledger checks. A forced cleanup after the bounded observation window is a failed normal-exit check, not a pass.
+In Desktop rc.3, clicking the window's X hides it to the tray. Normal-exit acceptance requires the tray's **Quit DeepSeek Harness** action (or the application's Exit action), followed by successful PID/creation-time and owned WSL-ledger checks. A forced cleanup after the bounded observation window is a failed normal-exit check, not a pass.
 
 The human observation window is ten minutes, separate from the unchanged two-minute real-turn timeout and the RPC, cancellation and cleanup deadlines. It ends early when the Desktop child closes. Expiry without a normal exit still fails; a longer observation window must not turn forced cleanup into successful GUI acceptance.
 

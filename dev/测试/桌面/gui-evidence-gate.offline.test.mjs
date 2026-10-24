@@ -215,7 +215,7 @@ function createFixture(mutate, mutateEvidence, tarballPath = TARBALL, mutateAfte
     mode: "real-turn",
     status: "PASS",
     fixture: "gui-human-canonical-20261010-2340",
-    runtime: "DeepSeek Harness Desktop 0.2.1-rc.2",
+    runtime: "DeepSeek Harness Desktop 0.2.1-rc.3",
     tgzSha256: fixtureTgzSha256,
     appAsarSha256: fakeAsarSha256,
     sessionIdSha256,
@@ -745,14 +745,14 @@ try {
     const { evidence } = createFixture();
     const result = validateD16Evidence(evidence, TARBALL);
     assert.equal(result.ok, true);
-    assert.equal(result.detail, "strict rc.2/TGZ/session/tool/UI/Windows+Linux cleanup evidence matched");
+    assert.equal(result.detail, "strict rc.3/TGZ/session/tool/UI/Windows+Linux cleanup evidence matched");
   });
 
   pass("fresh candidate D16 shape accepted (synthetic, not runtime evidence)", () => {
     const { evidence } = createCandidateFixture();
     const result = validateD16Evidence(evidence, CANDIDATE_TARBALL, candidateOptions());
     assert.equal(result.ok, true);
-    assert.equal(result.detail, "strict rc.2/TGZ/session/tool/UI/Windows+Linux cleanup evidence matched");
+    assert.equal(result.detail, "strict rc.3/TGZ/session/tool/UI/Windows+Linux cleanup evidence matched");
   });
   expectCandidateRejected("candidate rejects direct false truePty", mutateGitNativePtyEvidence((evidence) => {
     evidence.truePty = false;
@@ -800,7 +800,7 @@ try {
     });
     const result = validateD16Evidence(evidence, TARBALL);
     assert.equal(result.ok, true);
-    assert.equal(result.detail, "strict rc.2/TGZ/session/tool/UI/Windows+Linux cleanup evidence matched");
+    assert.equal(result.detail, "strict rc.3/TGZ/session/tool/UI/Windows+Linux cleanup evidence matched");
   });
   expectRejected("unknown GUI observation source is rejected", ({ gui }) => {
     gui.source = "unknown-gui-driver";

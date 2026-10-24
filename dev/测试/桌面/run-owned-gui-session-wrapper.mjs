@@ -82,7 +82,7 @@ const capability = spawnSync(appExe, ["--expose-internals", "--eval", capability
   stdio: ["ignore", "pipe", "pipe"],
 });
 if (capability.error !== undefined || capability.status !== 0) {
-  throw new Error("installed Electron Node mode cannot import the rc.2 ws transport");
+  throw new Error("installed Electron Node mode cannot import the rc.3 ws transport");
 }
 if (wrapperMode === "capability-only") process.exit(0);
 

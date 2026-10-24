@@ -40,6 +40,21 @@ function normalizeSha(value, field) {
   return text;
 }
 
+// Reference hashes must come from the separately verified target Desktop
+// distribution. Never reuse rc.2 hashes or trust the installation under test
+// to certify its own identity.
+export function readDesktopRuntimeIdentity(environment = process.env, { required = false } = {}) {
+  const read = (name) => {
+    const value = environment[name];
+    if (value === undefined && !required) return undefined;
+    return normalizeSha(value, name);
+  };
+  return {
+    asarSha256: read("DSH_DESKTOP_ASAR_SHA256"),
+    executableSha256: read("DSH_DESKTOP_EXE_SHA256"),
+  };
+}
+
 function inside(parent, child) {
   const rel = relative(resolve(parent), resolve(child));
   return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));

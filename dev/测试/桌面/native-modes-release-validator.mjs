@@ -309,7 +309,7 @@ export function qualifyGitNormalCloseGapForRoster(evidence, gitBinding, options)
       runOutputRoot: options.runOutputRoot,
       modeId: "bash-git-bash",
       fixture: "gui-human-canonical-20261010-2340",
-      runtime: "DeepSeek Harness Desktop 0.2.1-rc.2",
+      runtime: "DeepSeek Harness Desktop 0.2.1-rc.3",
       provider: "deepseek-account",
       model: "deepseek-flash",
       candidateSha256: options.candidateSha256,
@@ -1212,9 +1212,9 @@ export function validateNativeModesDesktopEvidence(report, options = {}) {
   "candidate TGZ dist hashes are not equal to the current source dist hashes");
   const runtimeHashCheck = top.get("desktop-runtime-hashes")?.[0];
   requirePassReport(runtimeHashCheck?.evidence?.appAsarSha256 === expectedAsarSha256,
-    "Desktop native mode evidence is not bound to the expected rc.2 app.asar SHA");
+    "Desktop native mode evidence is not bound to the expected rc.3 app.asar SHA");
   requirePassReport(runtimeHashCheck?.evidence?.executableSha256 === expectedExecutableSha256,
-    "Desktop native mode evidence is not bound to the expected rc.2 executable SHA");
+    "Desktop native mode evidence is not bound to the expected rc.3 executable SHA");
   for (const id of ["disabled-before:desktop-child", "enabled-retained:desktop-child", "disabled-after:desktop-child"]) {
     requirePassReport(topChildCheckLifecycleIsClean(top.get(id)?.[0]), `${id} child lifecycle is not clean`);
   }

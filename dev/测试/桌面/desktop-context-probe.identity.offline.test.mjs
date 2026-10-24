@@ -2,6 +2,22 @@
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readDesktopRuntimeIdentity } from "./gui-candidate-binding.mjs";
+
+assert.deepEqual(readDesktopRuntimeIdentity({}), {
+  asarSha256: undefined,
+  executableSha256: undefined,
+});
+assert.throws(() => readDesktopRuntimeIdentity({}, { required: true }), /DSH_DESKTOP_ASAR_SHA256/);
+assert.throws(() => readDesktopRuntimeIdentity({ DSH_DESKTOP_ASAR_SHA256: "invalid" }), /SHA-256/);
+assert.throws(() => readDesktopRuntimeIdentity({ DSH_DESKTOP_ASAR_SHA256: "a".repeat(64) }, { required: true }), /DSH_DESKTOP_EXE_SHA256/);
+assert.deepEqual(readDesktopRuntimeIdentity({
+  DSH_DESKTOP_ASAR_SHA256: "A".repeat(64),
+  DSH_DESKTOP_EXE_SHA256: "b".repeat(64),
+}, { required: true }), {
+  asarSha256: "a".repeat(64),
+  executableSha256: "b".repeat(64),
+});
 
 const source = readFileSync(
   new URL("./desktop-context-probe.mjs", import.meta.url),

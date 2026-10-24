@@ -66,10 +66,10 @@ function createHostGitFixture(delayMs = 0): {
   const anchor = join(root, "node_modules", "@deepseek-ai", "dsh", "package.json");
   const shellPath = join(root, "Git", "bin", "bash.exe");
 
-  writeJson(anchor, { name: "@deepseek-ai/dsh", version: "0.2.1-rc.2" });
+  writeJson(anchor, { name: "@deepseek-ai/dsh", version: "0.2.1-rc.3" });
   writeJson(join(root, "node_modules", "@deepseek-ai", "dsh-terminal-bash", "package.json"), {
     name: "@deepseek-ai/dsh-terminal-bash",
-    version: "0.2.1-rc.2",
+    version: "0.2.1-rc.3",
     type: "module",
     exports: { ".": "./index.js" },
   });
@@ -85,7 +85,7 @@ function createHostGitFixture(delayMs = 0): {
     ].filter((line) => line.length > 0).join("\n"),
   );
   // Resolve the emulator from the host fixture anchored by dsh-terminal-bash.
-  // This is deliberately CommonJS: the installed rc.2 host package is loaded
+  // This is deliberately CommonJS: the installed rc.3 host package is loaded
   // through createRequire, and the plugin must not use a plugin-owned copy.
   writeJson(join(root, "node_modules", "@xterm", "headless", "package.json"), {
     name: "@xterm/headless",

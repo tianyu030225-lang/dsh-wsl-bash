@@ -20,12 +20,13 @@ import {
   FIXTURE_ID,
   OWNED_ROOT,
   collectGuiSourceHashes,
+  readDesktopRuntimeIdentity,
   resolveGuiCandidateBinding,
   sha256File,
 } from "./gui-candidate-binding.mjs";
 
 const REPO_ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
-const EXPECTED_ASAR_SHA256 = "47874618bf5b3011fcaac10cd4c85f69da333e70d4f99b921207c78d0999512a";
+const { asarSha256: EXPECTED_ASAR_SHA256, executableSha256: EXPECTED_EXE_SHA256 } = readDesktopRuntimeIdentity();
 const RUN_ROOT = join(REPO_ROOT, "测试", "运行产物");
 
 function installedDesktopPaths() {
@@ -48,6 +49,7 @@ function inside(parent, child) {
 }
 
 if (process.platform !== "win32") throw new Error("owned Desktop launcher requires Windows Node");
+readDesktopRuntimeIdentity(process.env, { required: true });
 const { appAsar: APP_ASAR, appExe: APP_EXE } = installedDesktopPaths();
 if (!existsSync(APP_EXE) || !existsSync(APP_ASAR)) throw new Error("installed DeepSeek Harness runtime is missing");
 if (!existsSync(OWNED_ROOT)) throw new Error("owned GUI fixture root is missing");
@@ -57,6 +59,7 @@ if (!inside(runReal, rootReal)) throw new Error("owned GUI root escaped 测试/�
 
 const candidate = await resolveGuiCandidateBinding();
 if ((await sha256File(APP_ASAR)) !== EXPECTED_ASAR_SHA256) throw new Error("installed Desktop app.asar identity changed");
+if ((await sha256File(APP_EXE)) !== EXPECTED_EXE_SHA256) throw new Error("installed Desktop executable identity changed");
 const sourceHashes = await collectGuiSourceHashes();
 
 const dshHome = join(OWNED_ROOT, "dsh-home");
@@ -103,7 +106,7 @@ console.log(JSON.stringify({
   started: true,
   pid: child.pid,
   fixture: FIXTURE_ID,
-  runtime: "DeepSeek Harness Desktop 0.2.1-rc.2",
+  runtime: "DeepSeek Harness Desktop 0.2.1-rc.3",
   tgzSha256: candidate.tgzSha256,
   candidateBinding: {
     tgzRelativePath: candidate.tgzRelativePath,

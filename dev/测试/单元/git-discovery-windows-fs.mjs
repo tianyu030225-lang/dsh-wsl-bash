@@ -36,7 +36,7 @@ const expectedCandidateSha256 =
   "99aa538370cea3af867ec0de5878a1206966ef60e44b9c3d19843a39dbbc3d33";
 const expectedCliSha256 =
   "dbb4a7c1d88c412278fc8baccac7553f6d2310e85f5ffea1470a30106e99c688";
-const expectedCliVersion = "0.2.1-rc.2";
+const expectedCliVersion = "0.2.1-rc.3";
 const candidateTgzPath = process.env.DSH_PLUGIN_TGZ?.trim() || undefined;
 const cliPackagePath =
   process.env.DSH_CLI_PACKAGE_PATH?.trim() ||

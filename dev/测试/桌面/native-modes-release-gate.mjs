@@ -115,7 +115,7 @@ export function runNativeModesReleaseGate(options) {
       `candidate/final=${candidateFinalIdentityOk ? "match" : "mismatch"}; fresh security/CLI/native-CLI=${freshCliCoreOk ? "PASS" : "missing"}`);
   } else if (!candidateDesktopCapability) {
     addResult(results, "new native modes Desktop backend qualification", "SKIP",
-      "actual Windows rc.2 Desktop executable/app.asar or native-mode probe is unavailable");
+      "actual Windows rc.3 Desktop executable/app.asar or native-mode probe is unavailable");
   } else {
     const nativeModesProbe = spawnSync(process.execPath, [nativeModesDesktopProbePath, "--tgz", candidatePath], {
       cwd: root,
@@ -131,8 +131,8 @@ export function runNativeModesReleaseGate(options) {
     const nativeModesAudit = validateNativeModesDesktopEvidence(nativeModesEvidence, {
       candidateSha256,
       probeSourceSha256: fileSha256(nativeModesDesktopProbePath),
-      expectedAsarSha256: existsSync(desktopPaths.asar) ? fileSha256(desktopPaths.asar) : undefined,
-      expectedExecutableSha256: existsSync(desktopPaths.executable) ? fileSha256(desktopPaths.executable) : undefined,
+      expectedAsarSha256,
+      expectedExecutableSha256,
     });
     const nativeModesComplete = nativeModesProbe.status === 0
       && nativeModesProbe.error === undefined

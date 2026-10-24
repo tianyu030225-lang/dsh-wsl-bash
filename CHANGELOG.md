@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.3 — 2026-10-24
+
+- Retarget the exact Desktop/CLI host contract from DSH `0.2.1-rc.2` to
+  [DSH `0.2.1-rc.3`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.3).
+  Align `engines.dsh`, all official peer/development dependencies, runtime
+  checks, doctor guidance, the pnpm lockfile, and CLI/Desktop probes.
+- Compare the official rc.2 and rc.3 tags: the terminal, subprocess, sandbox,
+  approval and Standard-preset interfaces used by this plugin are unchanged.
+  rc.3 adds plugin navigation menus, fixes unsent draft reuse, and updates
+  DeepSeek API-key model discovery. No shell/tool rewrite is needed.
+- Preserve both shell modes, one-shot tools, PowerShell, standing permission
+  requirements, fail-closed checks and owner/process cleanup. Add regressions
+  that reject old rc.2 and unverified later hosts before any registration.
+- Require independently verified rc.3 Desktop ASAR/executable reference hashes
+  for interactive qualification instead of reusing hard-coded rc.2 hashes.
+  Retain all historical reports, TGZ identities and upstream attributions.
+- This is a source update. Automated checks and packaging do not establish
+  full Desktop/GUI qualification or publish a GitHub/npm release.
+
 ## 0.2.2 — 2026-10-19
 
 This release repairs the CI coverage gap found in the `0.2.1` workflow. The
