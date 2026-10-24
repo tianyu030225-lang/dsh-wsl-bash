@@ -2,6 +2,8 @@
 
 [简体中文](README.zh-CN.md)
 
+> **Development branch `develop`**: reserved for future DSH compatibility updates and plugin iteration. **Codex** implemented and automatically validated this `0.2.3` / DSH `0.2.1-rc.3` adaptation. Windows CI and WSL probes passed; Windows Desktop/GUI interactive qualification is still outstanding. This is not a formal release. `master` retains its existing version and is unchanged by this work.
+
 Native Git Bash and WSL backends for DSH on Windows. Plugin `0.2.3` targets Desktop and CLI `0.2.1-rc.3` with one shared package. It keeps the existing `pwsh` tool and adds two Web/Desktop modes:
 
 - **WSL 模式** (`bash-wsl`): Standard capabilities with an agent-owned persistent WSL `bash`;
@@ -11,7 +13,7 @@ Both modes retain one-shot `wsl_bash`, `git_bash`, and the official `pwsh`. They
 
 The package targets Node.js `>=22` and accepts only DSH `0.2.1-rc.3`. Older DSH versions are not supported by this release; use the documentation at the appropriate historical tag instead. GitHub source publication and npm registry publication are separate steps. An npm release is not currently announced; do not assume that this package name or an unpinned `latest` installs this source.
 
-The default branch documents the current `0.2.3` source. Historical tags and reports describe only their own revisions; `v0.1.0` targets DSH `0.1.0-rc.6`.
+This `develop` branch documents the current `0.2.3` development source; the default `master` branch retains its existing version. Historical tags and reports describe only their own revisions; `v0.1.0` targets DSH `0.1.0-rc.6`.
 
 Public regression sources, smoke scripts and fixtures are grouped under [`dev/测试/`](dev/测试/). Local test artifacts stay in the ignored root `测试/运行产物/`; they are not included in Git or npm packages. CI uploads its unit results, smoke diagnostic JSON and tested TGZ as Actions artifacts.
 
