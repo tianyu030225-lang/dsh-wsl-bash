@@ -1,5 +1,7 @@
 # Contributing
 
+Version iterations use `develop`: create version branches from `develop` and target their pull requests back to `develop`. Do not commit, push or merge changes to `master`.
+
 Plugin `0.2.3` contributions target Desktop and CLI DSH `0.2.1-rc.3`, Node.js `>=22`, and the fail-closed security model. Keep plugin `0.2.0` for DSH `0.2.0-rc.2`/`0.2.1-alpha.1` and plugin `0.1.0` for old DSH `0.1.0-rc.6`; do not add legacy branches to the new runtime.
 
 This is one repository's next version, not separate CLI and Desktop packages. For a clean source checkout, follow the build/package steps in `README.md` with Windows Node and the declared `pnpm@11.21.0`; package creation runs the existing build hook and is not an npm publication. The npm package intentionally omits `src`; inspect the matching Git source revision when debugging source/declaration-map references.
@@ -18,7 +20,7 @@ Put all new validation code under `dev/测试` and temporary fixtures under `测
 
 Update both `README.md` and `README.zh-CN.md` when user-visible behavior changes. Update `SECURITY.md` when a trust boundary or non-goal changes. If code is copied or adapted, retain its MIT or upstream notice and add the source/commit to the attribution section.
 
-Do not stage machine-specific handoff notes, real-profile installation helpers, authentication files, pause logs or generated terminal captures. Preserve portable regression code and synthetic fixtures under `dev/测试`; do not exclude that directory as a whole. Keep historical reports tied to their recorded source and artifact identities, and do not relabel an old PASS as a result for a later revision. The current CI push trigger covers `main`/`master`; pushing only a development branch does not itself prove that CI ran. Its informational Windows probe is not a replacement for the separate required real-host release evidence.
+Do not stage machine-specific handoff notes, real-profile installation helpers, authentication files, pause logs or generated terminal captures. Preserve portable regression code and synthetic fixtures under `dev/测试`; do not exclude that directory as a whole. Keep historical reports tied to their recorded source and artifact identities, and do not relabel an old PASS as a result for a later revision. The current CI push trigger covers `main`/`master`/`develop`; a version branch runs CI through its pull request into `develop`. Automated Windows/WSL probes do not replace the separate required Desktop/GUI release evidence.
 
 ## Release checks
 
