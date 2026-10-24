@@ -66,6 +66,10 @@ An already authenticated, protected test fixture may be reused without creating 
 
 ## Suggested commands
 
+CI runs the existing unit, Windows execution guard and real WSL/CLI jobs, plus `pnpm run test:desktop-offline` on Ubuntu and Windows. The offline command explicitly lists eight self-contained Desktop regression files, including the probe hash-identity checks. It uses Node's test runner because the Vitest suite intentionally matches only `*.test.ts`. These tests use source inspection, in-memory mocks and temporary synthetic fixtures; they do not launch Desktop/GUI, read credentials or qualify a real runtime.
+
+Do not replace this allowlist with a blanket `*.offline.test.mjs` glob: `gui-evidence-gate.offline.test.mjs` still requires untracked historical TGZs and run artifacts and is deliberately not in this CI command. Its existing release-evidence gate remains unchanged. Review any added offline file for independent, clean-checkout execution before extending the list.
+
 When working from WSL, invoke a verified Windows `node.exe` or the existing owned Windows launcher. Do not invoke the Desktop `resources/runtime/bin/node` shell shim across WSL interoperability: its Unix-side `ELECTRON_RUN_AS_NODE` export did not select Windows Node mode in a recorded audit and instead opened the ordinary Desktop. A failed source-inspection attempt must not fall back to launching a real profile.
 
 Run these commands from a source checkout; the npm tarball does not contain the source-only `scripts/`, `docs/`, `dev/`, or `src/` directories.
@@ -73,6 +77,7 @@ Run these commands from a source checkout; the npm tarball does not contain the 
 ```sh
 npm run typecheck
 npm test
+pnpm run test:desktop-offline
 node scripts/release-check.mjs
 ```
 

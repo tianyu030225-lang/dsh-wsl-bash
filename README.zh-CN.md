@@ -30,7 +30,7 @@
 | 桌面版 | `0.2.1-rc.3` |
 | CLI | `0.2.1-rc.3` |
 
-自动 CI 覆盖 Ubuntu/Windows 单元测试及真实 Windows CLI/WSL 安全、集成探测。绿色 CI 不等于完成桌面版/GUI 全量验收；`scripts/release-check.mjs` 中的交互验收仍需独立的新证据，这里不宣称 `0.2.3` 已通过完整桌面版/GUI 门禁。[0.2.0 双宿主报告](docs/testing-report-0.2.0.md)只对应 `v0.2.0` 的历史制品。每份结果都必须核对源码修订与准确 TGZ 的 SHA-256，同名文件或相同版本号不能证明是同一份已测制品。
+自动 CI 在 `develop`、`main`/`master` 推送、PR 和手动触发时运行，覆盖 Ubuntu/Windows 单元测试、8 个独立桌面离线回归文件（`pnpm run test:desktop-offline`）及真实 Windows CLI/WSL 安全、集成探测。绿色 CI 不等于完成桌面版/GUI 全量验收；`scripts/release-check.mjs` 中的交互验收仍需独立的新证据，这里不宣称 `0.2.3` 已通过完整桌面版/GUI 门禁。[0.2.0 双宿主报告](docs/testing-report-0.2.0.md)只对应 `v0.2.0` 的历史制品。每份结果都必须核对源码修订与准确 TGZ 的 SHA-256，同名文件或相同版本号不能证明是同一份已测制品。
 
 > **非官方社区项目。** 本插件是独立、社区维护的扩展，**与 DeepSeek 无隶属、背书或赞助关系**。"DeepSeek Harness"与"DSH"为其各自所有者的商标。插件使用官方公开服务与依赖；本插件的任何缺陷、安全问题或行为变更均由本仓库负责，与 DeepSeek 或 DSH 项目无关。
 

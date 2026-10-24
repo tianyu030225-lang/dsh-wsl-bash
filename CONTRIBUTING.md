@@ -24,4 +24,6 @@ Do not stage machine-specific handoff notes, real-profile installation helpers, 
 
 ## Release checks
 
+Run `pnpm run test:desktop-offline` for the eight independent Desktop validator regressions described in `docs/testing.md`. These offline checks do not replace actual Desktop/GUI release evidence.
+
 From a source checkout, run `node scripts/release-check.mjs` before asking for review; the npm tarball does not include the source-only `scripts/` directory. It must finish without publishing or pushing, and its tarball manifest must not include secrets, local paths, build caches, test workspaces, or unrelated package files.

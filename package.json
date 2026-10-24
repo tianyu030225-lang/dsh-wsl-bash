@@ -57,6 +57,7 @@
     "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "test:desktop-offline": "node --test dev/测试/桌面/combine-owned-gui-native-evidence.offline.test.mjs dev/测试/桌面/desktop-context-probe.identity.offline.test.mjs dev/测试/桌面/git-normal-close-gap-evidence.offline.test.mjs dev/测试/桌面/native-modes-desktop-cancel.offline.test.mjs dev/测试/桌面/native-modes-release-validator.offline.test.mjs dev/测试/桌面/new-modes-desktop-artifact.raw-observer.offline.test.mjs dev/测试/桌面/output-cap-gate.offline.test.mjs dev/测试/桌面/run-owned-gui-session.offline.test.mjs",
     "test:watch": "vitest",
     "smoke:integration": "node dev/测试/smoke/integration.mjs",
     "smoke:security": "node dev/测试/smoke/security-probe.mjs",

@@ -5,6 +5,7 @@ import test from "node:test";
 import { createHash } from "node:crypto";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   realpathSync,
@@ -411,6 +412,7 @@ function makeFixtureValues() {
 }
 
 function writeFixture(mutate = undefined) {
+  mkdirSync(RUN_OUTPUT_ROOT, { recursive: true });
   const root = mkdtempSync(join(RUN_OUTPUT_ROOT, "git-normal-close-gap-offline-"));
   try {
     const values = makeFixtureValues();

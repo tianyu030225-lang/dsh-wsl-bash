@@ -54,6 +54,9 @@ jobs:
         if: runner.os == 'Windows'
         run: node scripts/check-windows-tests.mjs unit-results.json
 
+      - name: Desktop offline regressions
+        run: pnpm run test:desktop-offline
+
       - name: Build
         run: pnpm run build
 
