@@ -67,11 +67,11 @@ describe("0.2 host compatibility and profileContext anchor", () => {
     },
   );
 
-  it.each(["0.2.1-rc.2", "0.2.1-rc.4", "0.2.0-rc.99"])("rejects a %s anchor even when the local dependency is supported", (version) => {
+  it.each(["0.2.1-rc.2", "0.2.1-rc.3", "0.2.2-alpha.1", "0.2.1-rc.4", "0.2.0-rc.99"])("rejects a %s anchor even when the local dependency is supported", (version) => {
     const anchor = hostManifest(version);
     const ctx = activationContext(anchor);
 
-    expect(() => apply(ctx)).toThrow(`supports DSH 0.2.1-rc.3 only; detected ${version}`);
+    expect(() => apply(ctx)).toThrow(`supports DSH 0.2.2-alpha.2 only; detected ${version}`);
     expect(ctx.terminals.registerBackend).not.toHaveBeenCalled();
     expect(ctx.tools.register).not.toHaveBeenCalled();
     expect(ctx.systemPrompt.section).not.toHaveBeenCalled();
@@ -110,7 +110,7 @@ describe("0.2 host compatibility and profileContext anchor", () => {
   });
 
   it("keeps the deprecated singular export tied to the current exact contract", () => {
-    expect(SUPPORTED_DSH_VERSION).toBe("0.2.1-rc.3");
-    expect(SUPPORTED_DSH_VERSIONS).toEqual(["0.2.1-rc.3"]);
+    expect(SUPPORTED_DSH_VERSION).toBe("0.2.2-alpha.2");
+    expect(SUPPORTED_DSH_VERSIONS).toEqual(["0.2.2-alpha.2"]);
   });
 });

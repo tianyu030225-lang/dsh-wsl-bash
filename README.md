@@ -1,34 +1,34 @@
-# dsh-plugin-bash-wsl 0.2.3
+# dsh-plugin-bash-wsl 0.2.4
 
 [简体中文](README.zh-CN.md)
 
-> **Development branch `develop`**: reserved for future DSH compatibility updates and plugin iteration. **Codex** implemented and automatically validated this `0.2.3` / DSH `0.2.1-rc.3` adaptation. Windows CI and WSL probes passed; Windows Desktop/GUI interactive qualification is still outstanding. This is not a formal release. `master` retains its existing version and is unchanged by this work.
+> **Development branch `develop`**: reserved for future DSH compatibility updates and plugin iteration. **Codex** implemented and automatically validated this `0.2.4` / DSH `0.2.2-alpha.2` adaptation. Windows CI/WSL and Desktop/GUI results must be recorded for this candidate; previous runs do not qualify it. This is not a formal release. `master` retains its existing version and is unchanged by this work.
 
-Native Git Bash and WSL backends for DSH on Windows. Plugin `0.2.3` targets Desktop and CLI `0.2.1-rc.3` with one shared package. It keeps the existing `pwsh` tool and adds two Web/Desktop modes:
+Native Git Bash and WSL backends for DSH on Windows. Plugin `0.2.4` targets Desktop and CLI `0.2.2-alpha.2` with one shared package. It keeps the existing `pwsh` tool and adds two Web/Desktop modes:
 
 - **WSL 模式** (`bash-wsl`): Standard capabilities with an agent-owned persistent WSL `bash`;
 - **Git Bash 模式** (`bash-git-bash`): Standard capabilities with an agent-owned persistent native Git Bash `bash`, requiring explicit full access for the session.
 
 Both modes retain one-shot `wsl_bash`, `git_bash`, and the official `pwsh`. They use the running host's shipped Standard template; they do not replace the stock modes or change the selected default. User customizations to the stock Standard preset are not automatically copied. The headless CLI keeps persistent WSL by default; mode-dropdown selection is a Web/Desktop feature.
 
-The package targets Node.js `>=22` and accepts only DSH `0.2.1-rc.3`. Older DSH versions are not supported by this release; use the documentation at the appropriate historical tag instead. GitHub source publication and npm registry publication are separate steps. An npm release is not currently announced; do not assume that this package name or an unpinned `latest` installs this source.
+The package targets Node.js `>=24.9.0` and accepts only DSH `0.2.2-alpha.2`. Older DSH versions are not supported by this release; use the documentation at the appropriate historical tag instead. GitHub source publication and npm registry publication are separate steps. An npm release is not currently announced; do not assume that this package name or an unpinned `latest` installs this source.
 
-This `develop` branch documents the current `0.2.3` development source; the default `master` branch retains its existing version. Historical tags and reports describe only their own revisions; `v0.1.0` targets DSH `0.1.0-rc.6`.
+This `develop` branch documents the current `0.2.4` development source; the default `master` branch retains its existing version. Historical tags and reports describe only their own revisions; `v0.1.0` targets DSH `0.1.0-rc.6`.
 
 Public regression sources, smoke scripts and fixtures are grouped under [`dev/测试/`](dev/测试/). Local test artifacts stay in the ignored root `测试/运行产物/`; they are not included in Git or npm packages. CI uploads its unit results, smoke diagnostic JSON and tested TGZ as Actions artifacts.
 
-`0.2.3` targets [DSH `0.2.1-rc.3`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.3). It updates the exact host guard, official dependencies, doctor guidance and CLI/Desktop qualification scripts together. Upstream rc.3 adds plugin navigation menus, preserves unsent session drafts and updates API-key model discovery; the terminal, sandbox and permission interfaces used here are unchanged. Both shell modes keep their existing tools, parameters and permission boundaries.
+`0.2.4` targets [DSH `0.2.2-alpha.2`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.2-alpha.2). It raises the Node.js floor to `24.9.0`, aligns Cordis `4.0.6-alpha.1` and Schemastery `3.18.6-alpha.1`, and updates the exact host guard and validation matrix. CLI/Desktop probes now dispatch correlated tool-call batches through the host-selected native executor. Persistent Bash disables interactive history expansion (`set +H`) so literal `!` is not rewritten. Both shell modes retain their existing tool names, parameters and permission boundaries.
 
-The previous `0.2.2` fixed the Windows/WSL CI coverage gap. The earlier `0.2.1` upgrade followed [DSH `0.2.1-rc.2`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.2), which added **DeepSeek-V4.1-Flash-1017** support. No model performance improvement is claimed. Keep the `0.2.2` source when staying on DSH rc.2.
+The previous `0.2.3` targets DSH `0.2.1-rc.3`; retain that source for that host. Version `0.2.2` fixed the Windows/WSL CI coverage gap. The earlier `0.2.1` upgrade followed [DSH `0.2.1-rc.2`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.2), which added **DeepSeek-V4.1-Flash-1017** support. No model performance improvement is claimed. Keep the `0.2.2` source when staying on DSH rc.2.
 
-## 0.2.3 compatibility and release evidence
+## 0.2.4 compatibility and release evidence
 
 | Host | Supported DSH version |
 | --- | --- |
-| Desktop | `0.2.1-rc.3` |
-| CLI | `0.2.1-rc.3` |
+| Desktop | `0.2.2-alpha.2` |
+| CLI | `0.2.2-alpha.2` |
 
-Automated CI runs on `develop` pushes as well as `main`/`master`, pull requests and manual dispatch. It covers Ubuntu/Windows unit tests, eight independent Desktop offline regression files (`pnpm run test:desktop-offline`), and real Windows CLI/WSL security and integration probes. A green run is not full Desktop/GUI qualification: those interactive gates in `scripts/release-check.mjs` still require their own fresh evidence. No full `0.2.3` Desktop/GUI qualification is asserted here. The [0.2.0 dual-host report](docs/testing-report-0.2.0.md) remains historical evidence for `v0.2.0` only. Match every test result to its source revision and exact TGZ SHA-256; a filename or version number alone is insufficient.
+Automated CI runs on `develop` pushes as well as `main`/`master`, pull requests and manual dispatch. It covers Ubuntu/Windows unit tests, eight independent Desktop offline regression files (`pnpm run test:desktop-offline`), and real Windows CLI/WSL security and integration probes. A green run is not full Desktop/GUI qualification: those interactive gates in `scripts/release-check.mjs` still require their own fresh evidence. No full `0.2.4` Desktop/GUI qualification is asserted here. The [0.2.0 dual-host report](docs/testing-report-0.2.0.md) remains historical evidence for `v0.2.0` only. Match every test result to its source revision and exact TGZ SHA-256; a filename or version number alone is insufficient.
 
 > **Unofficial community project.** This plugin is an independent, community-maintained extension and is **not affiliated with, endorsed by, or sponsored by DeepSeek**. "DeepSeek Harness" and "DSH" are trademarks of their respective owners. The plugin uses public DSH services and official packages; any plugin defect or behavior change is the responsibility of this repository, not DeepSeek or DSH.
 
@@ -47,8 +47,8 @@ Persistent Git Bash commands execute in native Git Bash, not through PowerShell 
 ## Requirements
 
 - Windows with Git Bash and WSL installed;
-- Node.js `>=22`;
-- Desktop or CLI DSH `0.2.1-rc.3`;
+- Node.js `>=24.9.0`;
+- Desktop or CLI DSH `0.2.2-alpha.2`;
 - for every WSL mode: `bwrap`, `script`, and `realpath` inside the selected WSL distribution;
 - for Windows integration tests: a working Git Bash executable and `wsl.exe`.
 
@@ -60,7 +60,7 @@ The default distribution is `Ubuntu`. The plugin starts clean WSL shells (`--nop
 
 Git does not contain `dist/` or generated TGZ files. A GitHub source ZIP is not an installable DSH plugin tarball, and an old same-named TGZ left in a checkout must not be reused as the successor release.
 
-For the `0.2.3` source, use Windows Node.js `>=22` and `pnpm@11.21.0` as declared in `package.json`. Clone this repository and select the intended source revision before installing dependencies. From that checkout, the following Windows PowerShell commands create a separate package output directory:
+For the `0.2.4` source, use Windows Node.js `>=24.9.0` and `pnpm@11.21.0` as declared in `package.json`. Clone this repository and select the intended source revision before installing dependencies. From that checkout, the following Windows PowerShell commands create a separate package output directory:
 
 ```powershell
 pnpm install --frozen-lockfile
@@ -68,7 +68,7 @@ New-Item -ItemType Directory -Force -Path ".packages" | Out-Null
 pnpm pack --pack-destination ".packages"
 ```
 
-The existing `prepack` script runs `pnpm run build`, cleaning and rebuilding only this checkout's `dist/`. Do not omit development dependencies when building from source. The resulting `0.2.3` tarball is `.packages/dsh-plugin-bash-wsl-0.2.3.tgz`; retain its checksum with any release. These are build instructions, not a claim that a newly generated package has passed the release gate.
+The existing `prepack` script runs `pnpm run build`, cleaning and rebuilding only this checkout's `dist/`. Do not omit development dependencies when building from source. The resulting `0.2.4` tarball is `.packages/dsh-plugin-bash-wsl-0.2.4.tgz`; retain its checksum with any release. These are build instructions, not a claim that a newly generated package has passed the release gate.
 
 A `file:` or hoisted local install is a deployed copy or hardlink; a clean rebuild of this checkout can leave the profile's installed inode unchanged. Rebuilding or restarting alone is therefore not update proof. Reinstall the new TGZ into the exact target or isolated profile, confirm the runtime `installAnchor`, and compare the installed `dist` hashes with this build. A `link:` install is suitable only for explicitly verified local development and is never release evidence.
 
@@ -80,7 +80,7 @@ Back up the target profile's manifest, lockfile and this plugin before replaceme
 
 ```powershell
 Get-Command dsh
-dsh plugin --profile web add "C:\work\dsh-wsl-bash\.packages\dsh-plugin-bash-wsl-0.2.3.tgz"
+dsh plugin --profile web add "C:\work\dsh-wsl-bash\.packages\dsh-plugin-bash-wsl-0.2.4.tgz"
 ```
 
 Confirm that `Get-Command dsh` resolves the Windows installation. This command targets its `web` profile. Desktop owns a separate `desktop` profile: open **Settings → Plugins → Add Plugin** and select the same tarball there. Installing into `web` does not install into Desktop. Restart the relevant host and create a new conversation after installation. The package metadata loads `cordis.patch.yml`; keep the existing PowerShell bundle. A minimal isolated headless profile fragment is:
@@ -203,7 +203,7 @@ For Desktop, remove it through the Desktop plugin manager instead; do not substi
 
 | Symptom | Check |
 | --- | --- |
-| Plugin does not load | Confirm plugin `0.2.3`, Node `>=22`, and an actual host version of `0.2.1-rc.3`. Do not grant a version exemption to bypass the check. |
+| Plugin does not load | Confirm plugin `0.2.4`, Node `>=24.9.0`, and an actual host version of `0.2.2-alpha.2`. Do not grant a version exemption to bypass the check. |
 | Works in CLI but absent in Desktop | `web` and `desktop` are separate profiles. Check the profile that the actual host loaded and restart it after installation. |
 | `workspace-write` is unavailable | Run `doctor`; install `bwrap`/`script` through the host's normal system procedure, then restart DSH. The plugin intentionally does not fall back to unrestricted execution. |
 | Path with spaces or Chinese characters fails | One-shot tools accept `workdir`; persistent `bash` accepts only `command`, so use a correctly quoted `cd` there. Respect the applicable workspace boundary. |
@@ -215,7 +215,7 @@ For Desktop, remove it through the Desktop plugin manager instead; do not substi
 | Persistent state is missing | Use `bash`, not `wsl_bash`; verify the same agent owns the session. Persistent sessions use a clean shell and do not inherit unrelated host shell state. |
 | Network access is possible | Expected limitation. This plugin does not isolate network traffic; apply a host/network policy if isolation is required. |
 
-Desktop qualification requires `DSH_DESKTOP_ASAR_SHA256` and `DSH_DESKTOP_EXE_SHA256` from a separately verified rc.3 distribution. The scripts compare the installed binaries with those references; missing references block full qualification. Old rc.2 binary hashes and test results do not qualify this version.
+Desktop qualification requires `DSH_DESKTOP_ASAR_SHA256` and `DSH_DESKTOP_EXE_SHA256` from a separately verified `0.2.2-alpha.2` distribution. The scripts compare the installed binaries with those references; missing references block full qualification. Old rc.2 binary hashes and test results do not qualify this version.
 
 For a release candidate, run `node scripts/release-check.mjs` from the source checkout and retain the separate CLI and Desktop test reports. Typecheck, unit tests and archive inspection do not substitute for actual Desktop runtime activation. The gate uses isolated local profiles; skips are not passes. New validation code and reusable fixtures belong under `dev/测试`; temporary run data remains under `测试/运行产物`. Upstream snapshots and run artifacts must not enter Git or the tarball. No test publishes, pushes or modifies real user profiles.
 

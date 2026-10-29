@@ -88,7 +88,7 @@ function check(report: Awaited<ReturnType<typeof runDoctor>>, id: string) {
 }
 
 describe("doctor host identity and read-only contract", () => {
-  it.each(["0.2.1-rc.3"])(
+  it.each(["0.2.2-alpha.2"])(
     "reports supported host version %s as an overall pass",
     async (version) => {
       const report = await runDoctor(doctorOptions({ dshVersion: version }));
@@ -110,18 +110,18 @@ describe("doctor host identity and read-only contract", () => {
   });
 
   it("uses an explicit host anchor instead of an environment shadow version", async () => {
-    const anchor = hostAnchor("0.2.1-rc.3");
+    const anchor = hostAnchor("0.2.2-alpha.2");
     vi.stubEnv("DSH_VERSION", "0.1.0-rc.6");
 
     const report = await runDoctor(doctorOptions({ installAnchor: anchor }));
 
-    expect(report.version).toBe("0.2.1-rc.3");
+    expect(report.version).toBe("0.2.2-alpha.2");
     expect(check(report, "dsh-version")).toMatchObject({ status: "pass" });
     expect(report.ok).toBe(true);
   });
 
   it("turns an invalid explicit anchor into a version failure instead of using env", async () => {
-    vi.stubEnv("DSH_VERSION", "0.2.1-rc.3");
+    vi.stubEnv("DSH_VERSION", "0.2.2-alpha.2");
     const invalidAnchor = resolve(artifactRoot, "missing-doctor-anchor", "package.json");
 
     const report = await runDoctor(doctorOptions({ installAnchor: invalidAnchor }));
@@ -142,10 +142,10 @@ describe("doctor host identity and read-only contract", () => {
     const fsSeam = gitBashFs();
     const pathExists = vi.fn(() => true);
     const probe = passingProbe();
-    vi.stubEnv("DSH_VERSION", "0.2.1-rc.3");
+    vi.stubEnv("DSH_VERSION", "0.2.2-alpha.2");
 
     const report = await runDoctor(doctorOptions({
-      installAnchor: hostAnchor("0.2.1-rc.3"),
+      installAnchor: hostAnchor("0.2.2-alpha.2"),
       env: {
         DSH_HOME: profileRoot,
         DSH_PROFILE: profileRoot,

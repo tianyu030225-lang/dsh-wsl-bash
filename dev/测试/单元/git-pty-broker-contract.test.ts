@@ -116,7 +116,7 @@ async function createHarness(autoReady = true): Promise<{
   const runner = join(root, "runner.js");
   const nodePty = join(root, "node-pty.mjs");
   mkdirSync(dirname(anchor), { recursive: true });
-  writeFileSync(anchor, JSON.stringify({ name: "@deepseek-ai/dsh", version: "0.2.1-rc.3" }), "utf8");
+  writeFileSync(anchor, JSON.stringify({ name: "@deepseek-ai/dsh", version: "0.2.2-alpha.2" }), "utf8");
   writeFileSync(localModule, "export class LocalSubprocessRuntime {}\n", "utf8");
   writeFileSync(
     win32Module,

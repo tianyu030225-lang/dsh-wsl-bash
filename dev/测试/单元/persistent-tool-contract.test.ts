@@ -59,7 +59,7 @@ function makeToolFixture(mode: FixtureMode) {
     _id: string,
     request: { text: string; signal: AbortSignal },
   ) => {
-    if (request.text === "stty -echo") {
+    if (request.text === "stty -echo; set +H") {
       return {
         done: Promise.resolve<TerminalResult>({
           viewport: "",
@@ -237,7 +237,7 @@ describe("persistent bash tool completion and deadline contracts", () => {
 
     const request = fixture.startSend.mock.calls
       .map(([, , value]) => value as { text: string })
-      .find((value) => value.text !== "stty -echo");
+      .find((value) => value.text !== "stty -echo; set +H");
     expect(request).toBeDefined();
     expect(request?.text).not.toContain("\t");
     expect(request?.text).not.toContain("\x1b");

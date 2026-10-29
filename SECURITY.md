@@ -1,6 +1,6 @@
 # Security model
 
-This is the security contract for plugin `dsh-plugin-bash-wsl` `0.2.3`, supporting Desktop and CLI DSH `0.2.1-rc.3` only. DSH `0.2.0-rc.2`/`0.2.1-alpha.1` remain on plugin `0.2.0`, and old DSH `0.1.0-rc.6` remains on plugin `0.1.0`. It records deliberate limits and required fail-closed behavior. A test contradicting this contract blocks release; never weaken it to make an implementation pass.
+This is the security contract for plugin `dsh-plugin-bash-wsl` `0.2.4`, supporting Desktop and CLI DSH `0.2.2-alpha.2` only. DSH `0.2.0-rc.2`/`0.2.1-alpha.1` remain on plugin `0.2.0`, and old DSH `0.1.0-rc.6` remains on plugin `0.1.0`. It records deliberate limits and required fail-closed behavior. A test contradicting this contract blocks release; never weaken it to make an implementation pass.
 
 ## Assets and trust boundaries
 
@@ -84,4 +84,4 @@ Before a release candidate, run the source-tree gate and retain separate CLI and
 
 ## Attribution
 
-This package is MIT-licensed. Version `0.2.3` uses the public plugin seams of DSH Desktop and CLI `0.2.1-rc.3`. The terminal state machine originally adapted from `0.1.0-rc.6` retains its attribution in `src/terminal/session.ts` and `NOTICE`; that attribution is not an old-host compatibility declaration. Any copied or adapted code from DSH or third-party audited projects must keep the source license/copyright notice and identify the source and version here or beside the adaptation. No security guarantee from a referenced project is being imported by reference.
+This package is MIT-licensed. Version `0.2.4` uses the public plugin seams of DSH Desktop and CLI `0.2.2-alpha.2`. The terminal state machine originally adapted from `0.1.0-rc.6` retains its attribution in `src/terminal/session.ts` and `NOTICE`; that attribution is not an old-host compatibility declaration. Any copied or adapted code from DSH or third-party audited projects must keep the source license/copyright notice and identify the source and version here or beside the adaptation. No security guarantee from a referenced project is being imported by reference.

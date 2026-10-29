@@ -13,7 +13,7 @@ function summary(modeId) {
     mode: "real-turn",
     status: "PASS",
     fixture: "gui-human-canonical-20261010-2340",
-    runtime: "DeepSeek Harness Desktop 0.2.1-rc.3",
+    runtime: "DeepSeek Harness Desktop 0.2.2-alpha.2",
     tgzSha256: hash("candidate"),
     appAsarSha256: hash("asar"),
     cwd: "owned fixture workspace 中文 space",

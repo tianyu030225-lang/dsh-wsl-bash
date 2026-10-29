@@ -13,9 +13,9 @@ describe("DSH runtime compatibility", () => {
   });
 
   it("fails closed for legacy and unknown host versions", () => {
-    for (const version of ["0.1.0-rc.6", "0.1.0-rc.5", "0.2.1-rc.2", "0.2.1-rc.4", "0.2.1", "unknown"]) {
+    for (const version of ["0.1.0-rc.6", "0.1.0-rc.5", "0.2.1-rc.2", "0.2.1-rc.3", "0.2.2-alpha.1", "0.2.2", "0.2.1-rc.4", "0.2.1", "unknown"]) {
       expect(() => assertSupportedDshVersion(version)).toThrow(
-        "supports DSH 0.2.1-rc.3 only",
+        "supports DSH 0.2.2-alpha.2 only",
       );
     }
   });
