@@ -1571,7 +1571,7 @@ async function inspectServices(ctx, api) {
   const names = tools.schemas().map((schema) => schema.name);
   const backends = terminals.listBackends();
   const hostVersion = api.readDshVersion(profileContext.installAnchor);
-  assert(hostVersion === "0.2.1-rc.3", `unexpected host version ${hostVersion}`);
+  assert(hostVersion === "0.2.2-alpha.2", `unexpected host version ${hostVersion}`);
   assert(names.includes("wsl_bash"), "wsl_bash is not registered in the CLI context");
   assert(names.includes("git_bash"), "git_bash is not registered in the CLI context");
   assert(names.includes("bash"), "official persistent bash tool is not registered in the CLI context");
@@ -1612,13 +1612,15 @@ async function executeOfficialRaw(ctx, agent, name, command, signal = undefined,
     signalAborted: signal?.aborted === true,
   });
   try {
-    const result = await tools.execute({
-      callId,
-      name,
-      arguments: { ...extraArguments, command },
+    // alpha.2 dispatches complete model-call batches through the selected executor.
+    const batch = await tools.execute({
+      calls: [{ type: "tool-call", id: callId, name, arguments: JSON.stringify({ ...extraArguments, command }) }],
       agent,
       signal: signal ?? new AbortController().signal,
     });
+    assert(batch.results?.length === 1 && batch.results[0]?.callId === callId,
+      "official native executor returned an uncorrelated single-call batch");
+    const result = batch.results[0].result;
     const text = officialResultText(result);
     appendCaseDiagnostic("tools.execute.return", {
       callId,
@@ -1858,7 +1860,7 @@ async function persistentState(ctx) {
     });
     agent = handle?.agent;
     assert(agent !== undefined, "official agent factory returned no agent");
-    assert(typeof tools.get === "function" && tools.get("bash", agent) !== undefined,
+    assert(typeof tools.executable === "function" && tools.executable("bash", agent) !== undefined,
       "official persistent bash tool is not visible to the created agent");
     authorizePersistentShell(agent);
     const first = await executeOfficialTool(
@@ -1878,8 +1880,12 @@ async function persistentState(ctx) {
       `job_pid=\"\${DSH_CLI_JOB_PID-}\"; if [ -n \"$job_pid\" ] && kill -0 \"$job_pid\" 2>/dev/null && jobs -p | grep -Fx \"$job_pid\" >/dev/null; then printf 'job-alive=%s\\n' \"$job_pid\"; else printf 'job-missing\\n'; fi; ${pwdFrame}; printf 'var=%s size=%s\\n' \"$DSH_CLI_PERSIST\" \"$(stty size 2>/dev/null || printf unavailable)\"; cli_probe_function; kill \"$job_pid\" 2>/dev/null || true; wait \"$job_pid\" 2>/dev/null || true; printf 'job-clean\\n'`,
     );
     const output = `${first.text}\\n${second.text}`;
+    const history = await executeOfficialTool(ctx, agent, "bash",
+      `case $- in *H*) printf 'history-expansion-enabled\\n'; exit 97;; esac; printf 'history=%s\\n' "!!" "!dsh-probe"`);
+    assert(history.text.includes("history=!!") && history.text.includes("history=!dsh-probe"),
+      "persistent Bash must preserve literal history-expansion tokens");
     assert(output.includes("var=kept"), "persistent environment did not survive the second official bash call");
-   assert(output.includes("function=kept"), "persistent shell function did not survive the second official bash call");
+    assert(output.includes("function=kept"), "persistent shell function did not survive the second official bash call");
     assert(/job-alive=\d+/.test(output), "persistent background job did not survive the second official bash call");
     assert(output.includes("job-clean"), "persistent background job was not explicitly killed and waited");
     const expectedPersistentCwd = PERSISTENT_SHELL === "git-bash"
@@ -2087,7 +2093,7 @@ async function officialOneShot(ctx, toolName, mode, command, description) {
     const agent = handle?.agent;
     assert(agent !== undefined, `official agent factory returned no agent for ${toolName}`);
     const tools = ctx.get("tools");
-    assert(typeof tools?.get === "function" && tools.get(toolName, agent) !== undefined,
+    assert(typeof tools?.executable === "function" && tools.executable(toolName, agent) !== undefined,
       `official ${toolName} tool is not visible to the created agent`);
     if (typeof agent.session?.append === "function") {
       agent.session.append("sandbox/mode", { mode });
@@ -2130,7 +2136,7 @@ async function officialMalformedUtf8CapForTool(ctx, toolName, mode) {
     const agent = handle?.agent;
     assert(agent !== undefined, "official agent factory returned no agent for malformed UTF-8 cap");
     const tools = ctx.get("tools");
-    assert(typeof tools?.get === "function" && tools.get(toolName, agent) !== undefined,
+    assert(typeof tools?.executable === "function" && tools.executable(toolName, agent) !== undefined,
       "official " + toolName + " tool is not visible to the created agent");
     if (typeof agent.session?.append === "function") {
       agent.session.append("sandbox/mode", { mode });
@@ -2190,7 +2196,7 @@ async function officialGitBashMalformedUtf8StderrCap(ctx) {
     const agent = handle?.agent;
     assert(agent !== undefined, "official agent factory returned no agent for Git Bash stderr cap");
     const tools = ctx.get("tools");
-    assert(typeof tools?.get === "function" && tools.get("git_bash", agent) !== undefined,
+    assert(typeof tools?.executable === "function" && tools.executable("git_bash", agent) !== undefined,
       "official git_bash tool is not visible to the created agent");
     if (typeof agent.session?.append === "function") {
       agent.session.append("sandbox/mode", { mode: "danger-full-access" });
@@ -2251,7 +2257,7 @@ async function officialWslMergedStderrCap(ctx) {
     const agent = handle?.agent;
     assert(agent !== undefined, "official agent factory returned no agent for WSL merged stderr cap");
     const tools = ctx.get("tools");
-    assert(typeof tools?.get === "function" && tools.get("wsl_bash", agent) !== undefined,
+    assert(typeof tools?.executable === "function" && tools.executable("wsl_bash", agent) !== undefined,
       "official wsl_bash tool is not visible to the created agent");
     if (typeof agent.session?.append === "function") {
       agent.session.append("sandbox/mode", { mode: "workspace-write" });
@@ -2364,7 +2370,7 @@ async function officialGitBashWorkdirDefaultsV2(ctx) {
       "official sandbox policy workspaceRoot differed from the agent workspace: " +
       sanitized(policyWorkspaceRoot));
     const tools = ctx.get("tools");
-    assert(typeof tools?.get === "function" && tools.get("git_bash", agent) !== undefined,
+    assert(typeof tools?.executable === "function" && tools.executable("git_bash", agent) !== undefined,
       "official git_bash tool is not visible to the created agent");
     if (typeof agent.session?.append === "function") {
       agent.session.append("sandbox/mode", { mode: "danger-full-access" });
@@ -2678,7 +2684,7 @@ async function powerShellTool(ctx) {
     handle = await createProbeAgent(ctx, { sessionId: randomUUID(), meta: { cwd: WORKSPACE } });
     const agent = handle?.agent;
     assert(agent !== undefined, "official agent factory returned no agent for PowerShell");
-    assert(typeof tools.get === "function" && tools.get("pwsh", agent) !== undefined,
+    assert(typeof tools.executable === "function" && tools.executable("pwsh", agent) !== undefined,
       "official PowerShell tool is not visible to the created agent");
     const result = await executeOfficialTool(
       ctx,

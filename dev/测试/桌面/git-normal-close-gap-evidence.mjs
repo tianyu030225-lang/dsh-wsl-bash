@@ -673,7 +673,7 @@ export function buildGitNormalCloseGapEvidence(bindings, options = {}) {
   const expected = {
     modeId: KNOWN_GIT_MODE_ID,
     fixture: options.fixture ?? "gui-human-canonical-20261010-2340",
-    runtime: options.runtime ?? "DeepSeek Harness Desktop 0.2.1-rc.3",
+    runtime: options.runtime ?? "DeepSeek Harness Desktop 0.2.2-alpha.2",
     provider: options.provider ?? "deepseek-account",
     model: options.model ?? "deepseek-flash",
     observationWindowMs: options.observationWindowMs ?? 600_000,

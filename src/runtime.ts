@@ -4,7 +4,7 @@ import { isAbsolute } from "node:path";
 
 /** Exact host contracts supported by this release; never a floating range. */
 export const SUPPORTED_DSH_VERSIONS = Object.freeze([
-  "0.2.1-rc.3",
+  "0.2.2-alpha.2",
 ] as const);
 
 /** @deprecated Use SUPPORTED_DSH_VERSIONS to include the Desktop contract. */

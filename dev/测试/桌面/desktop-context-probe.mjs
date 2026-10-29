@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Desktop 0.2.1-rc.3 acceptance probe.
+ * Desktop 0.2.2-alpha.2 acceptance probe.
  *
  * The parent process uses the installed Desktop Electron executable and the
  * real app.asar runtime.  The child process starts the same Desktop profile
@@ -41,23 +41,23 @@ import { gunzipSync } from "node:zlib";
 const ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const TEST_ROOT = join(ROOT, "测试");
 const RUN_ROOT = join(TEST_ROOT, "运行产物");
-const EXPECTED_DESKTOP_VERSION = "0.2.1-rc.3";
-const EXPECTED_PLUGIN_VERSION = "0.2.3";
+const EXPECTED_DESKTOP_VERSION = "0.2.2-alpha.2";
+const EXPECTED_PLUGIN_VERSION = "0.2.4";
 const EXPECTED_TOOLS = ["bash", "wsl_bash", "git_bash"];
 const DESKTOP_PEER_PACKAGES = {
-  "@deepseek-ai/cordis": new Set(["4.0.5"]),
-  "@deepseek-ai/dsh": new Set(["0.2.1-rc.3"]),
-  "@deepseek-ai/dsh-agent": new Set(["0.2.1-rc.3"]),
-  "@deepseek-ai/dsh-app-boot": new Set(["0.2.1-rc.3"]),
-  "@deepseek-ai/dsh-sandbox": new Set(["0.2.1-rc.3"]),
-  "@deepseek-ai/dsh-sandbox-policy": new Set(["0.2.1-rc.3"]),
-  "@deepseek-ai/dsh-subprocess": new Set(["0.2.1-rc.3"]),
-  "@deepseek-ai/dsh-system-prompt": new Set(["0.2.1-rc.3"]),
-  "@deepseek-ai/dsh-terminal": new Set(["0.2.1-rc.3"]),
-  "@deepseek-ai/dsh-tool-bash-persistent": new Set(["0.2.1-rc.3"]),
-  "@deepseek-ai/dsh-tools": new Set(["0.2.1-rc.3"]),
-  "@deepseek-ai/dsh-user-approval": new Set(["0.2.1-rc.3"]),
-  "@deepseek-ai/dsh-working-directory": new Set(["0.2.1-rc.3"]),
+  "@deepseek-ai/cordis": new Set(["4.0.6-alpha.1"]),
+  "@deepseek-ai/dsh": new Set(["0.2.2-alpha.2"]),
+  "@deepseek-ai/dsh-agent": new Set(["0.2.2-alpha.2"]),
+  "@deepseek-ai/dsh-app-boot": new Set(["0.2.2-alpha.2"]),
+  "@deepseek-ai/dsh-sandbox": new Set(["0.2.2-alpha.2"]),
+  "@deepseek-ai/dsh-sandbox-policy": new Set(["0.2.2-alpha.2"]),
+  "@deepseek-ai/dsh-subprocess": new Set(["0.2.2-alpha.2"]),
+  "@deepseek-ai/dsh-system-prompt": new Set(["0.2.2-alpha.2"]),
+  "@deepseek-ai/dsh-terminal": new Set(["0.2.2-alpha.2"]),
+  "@deepseek-ai/dsh-tool-bash-persistent": new Set(["0.2.2-alpha.2"]),
+  "@deepseek-ai/dsh-tools": new Set(["0.2.2-alpha.2"]),
+  "@deepseek-ai/dsh-user-approval": new Set(["0.2.2-alpha.2"]),
+  "@deepseek-ai/dsh-working-directory": new Set(["0.2.2-alpha.2"]),
 };
 const PROMPT_SECTION = "dsh-plugin-bash-wsl:usage";
 const MAX_LOG_CHARS = 8 * 1024;
@@ -305,7 +305,7 @@ function desktopPaths() {
     primaryRuntime: join(resources, "runtime", "primary-runtime"),
     // The installed Desktop keeps its Windows Node binary in the primary
     // runtime dependency tree. `runtime/bin/node` is only a shell shim and
-    // has no `.exe` sibling on the current rc.3 installation.
+    // has no `.exe` sibling on the current alpha.2 installation.
     node: join(
       resources,
       "runtime",
@@ -1061,7 +1061,7 @@ async function childMain(argv) {
       if (!allowedVersions.has(version)) peerMismatches.push(`${packageName}:${version ?? "missing-version"}`);
     }
     addCheck(checks, "desktop-runtime:peer-manifests", peerMismatches.length === 0 ? "PASS" : "FAIL", peerMismatches.length === 0
-      ? "actual app.asar/dsh peer manifests match the exact 0.2.1-rc.3 compatibility matrix"
+      ? "actual app.asar/dsh peer manifests match the exact 0.2.2-alpha.2 compatibility matrix"
       : "actual app.asar/dsh peer manifests contain a missing or unsupported version", {
       versions: peerVersions,
       mismatches: peerMismatches,
@@ -1199,7 +1199,7 @@ async function childMain(argv) {
           permissionPresetId = permissionPresets.defaultPreset;
           permissionPresets.resolve(permissionPresetId);
           addCheck(checks, "desktop-context:agent-preset-resolution", "PASS",
-            "resolved the actual rc.3 standard agent preset and the live default permission preset",
+            "resolved the actual alpha.2 standard agent preset and the live default permission preset",
             { agentPreset: standardPreset.id, permissionPreset: permissionPresetId });
         } catch (error) {
           addCheck(checks, "desktop-context:agent-preset-resolution", "FAIL",
@@ -1249,7 +1249,7 @@ async function childMain(argv) {
           probeAgentHandles.push(handle);
         }
           addCheck(checks, "desktop-context:agent-preset-mount", "PASS",
-            "created real owner-scoped agents through rc.3 with standard preset mounting and initialized permissions",
+            "created real owner-scoped agents through alpha.2 with standard preset mounting and initialized permissions",
             { agentPreset: standardPreset.id, permissionPreset: permissionPresetId, owners: presetOwners });
         addCheck(checks, "desktop-context:probe-agent-setup", "PASS", expectedPlugin
           ? "created two real owner-scoped agents through the official registry without starting a model request"
@@ -1258,7 +1258,7 @@ async function childMain(argv) {
         });
       } catch (error) {
           addCheck(checks, "desktop-context:agent-preset-mount", "FAIL",
-            "the actual rc.3 standard preset or permission initialization did not remain mounted on the created agent",
+            "the actual alpha.2 standard preset or permission initialization did not remain mounted on the created agent",
             { error: sanitize(error) });
         addCheck(checks, "desktop-context:probe-agent-setup", "FAIL", "the official agent factory could not create the live owner required by prompt/ownership assertions", {
           error: sanitize(error),
@@ -1649,7 +1649,7 @@ async function runtimeNegativeMain(argv) {
   const evidence = {
     schemaVersion: 2,
     target: `Desktop ${EXPECTED_DESKTOP_VERSION} / preserved plugin 0.1.0`,
-    scope: "actual rc.3 loader and runProfile/Host compatibility negative; independent from pnpm offline installation",
+    scope: "actual alpha.2 loader and runProfile/Host compatibility negative; independent from pnpm offline installation",
     host: {
       desktopVersion: null,
       executable: null,
@@ -1820,7 +1820,7 @@ async function runtimeNegativeMain(argv) {
     evidence.loaderStatus = loaderPassed ? "PASS" : "FAIL";
     if (loaderPassed) {
       evidence.status = "PASS";
-      evidence.qualification = "PASS: actual rc.3 loader explicitly rejected the preserved rc.6-peer plugin and omitted its layer before context mount";
+      evidence.qualification = "PASS: actual alpha.2 loader explicitly rejected the preserved rc.6-peer plugin and omitted its layer before context mount";
     } else {
       evidence.status = "FAIL";
       evidence.qualification = `FAIL: structured runtime rejection incomplete (child=${childClean ? "clean" : "unclean"}, peerRejection=${explicitPeerRejection}, contextNotStarted=${contextNotStarted}, oldToolsPromptAbsent=${oldToolsPromptAbsent})`;
@@ -1896,8 +1896,8 @@ async function runtimeNegativeMain(argv) {
         && hostSchemaCheck.evidence.observed.length === 0;
       evidence.runtimeContext.started = contextStarted;
       evidence.runtimeContext.reason = contextStarted
-        ? "actual rc.3 runProfile mounted the isolated host context"
-        : "actual rc.3 runProfile did not produce a structured context audit";
+        ? "actual alpha.2 runProfile mounted the isolated host context"
+        : "actual alpha.2 runProfile did not produce a structured context audit";
       evidence.hostRegistrationAudit = {
         status: hostToolAbsent && hostPromptAbsent && hostSchemaAbsent ? "PASS" : "FAIL",
         toolRegistration: hostToolCheck ?? null,
@@ -1917,19 +1917,19 @@ async function runtimeNegativeMain(argv) {
         && hostSchemaAbsent;
       if (hostContextPassed) {
         evidence.runtimeContext.fullAuditStatus = "PASS";
-        evidence.runtimeContext.fullAuditReason = "actual rc.3 runProfile context registered no old plugin tools or prompt schemas";
+        evidence.runtimeContext.fullAuditReason = "actual alpha.2 runProfile context registered no old plugin tools or prompt schemas";
         evidence.fullD14Status = "PASS";
-        evidence.fullD14Qualification = "PASS: actual rc.3 Host context mounted the old fixture profile without registering old wsl_bash/git_bash tools or plugin prompt";
+        evidence.fullD14Qualification = "PASS: actual alpha.2 Host context mounted the old fixture profile without registering old wsl_bash/git_bash tools or plugin prompt";
       } else if (!contextStarted) {
         evidence.runtimeContext.fullAuditStatus = "SKIP";
         evidence.runtimeContext.fullAuditReason = `Host context prerequisite/audit unavailable (child=${hostChildClean ? "clean" : "unclean"}, evidence=${evidence.hostEvidence === null ? "missing" : "present"})`;
         evidence.fullD14Status = "SKIP";
-        evidence.fullD14Qualification = `SKIP: actual rc.3 Host context did not reach a structured negative registration audit (child=${hostChildClean ? "clean" : "unclean"})`;
+        evidence.fullD14Qualification = `SKIP: actual alpha.2 Host context did not reach a structured negative registration audit (child=${hostChildClean ? "clean" : "unclean"})`;
       } else {
         evidence.runtimeContext.fullAuditStatus = "FAIL";
-        evidence.runtimeContext.fullAuditReason = "actual rc.3 Host context started but old plugin tool/prompt absence audit failed";
+        evidence.runtimeContext.fullAuditReason = "actual alpha.2 Host context started but old plugin tool/prompt absence audit failed";
         evidence.fullD14Status = "FAIL";
-        evidence.fullD14Qualification = "FAIL: actual rc.3 Host context started but old plugin registration/prompt absence was not proven";
+        evidence.fullD14Qualification = "FAIL: actual alpha.2 Host context started but old plugin registration/prompt absence was not proven";
       }
     } else {
       evidence.fullD14Status = "FAIL";
@@ -1959,7 +1959,7 @@ async function main() {
   const report = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
-    target: "Desktop 0.2.1-rc.3 / plugin 0.2.3",
+    target: "Desktop 0.2.2-alpha.2 / plugin 0.2.4",
     checks: [],
     phases: [],
     cleanup: {},
@@ -2001,7 +2001,7 @@ async function main() {
       && runtimeDescriptor.platform === "win32"
       && runtimeDescriptor.arch === "x64";
     addCheck(report, "desktop-runtime:version", appVersionOk && dshVersionOk && descriptorOk ? "PASS" : "FAIL", appVersionOk && dshVersionOk && descriptorOk
-      ? "actual app.asar and desktop-runtime descriptor are 0.2.1-rc.3"
+      ? "actual app.asar and desktop-runtime descriptor are 0.2.2-alpha.2"
       : "actual installed Desktop runtime version or platform metadata does not match the target", {
       appVersion: appManifest.version,
       runtimeVersion: dshManifest.version,
@@ -2072,7 +2072,7 @@ async function main() {
       addCheck(report, "desktop-context:approval-variant", "PASS", "test-only profile requests the actual Host api-remotes forwarding row disabled; live Loader state is checked after startup, while approval service remains loaded for rejection auditing", {
         rowIds: ["api-remotes"],
         patch: "- id: api-remotes\\n  name: '@deepseek-ai/dsh-api-remotes'\\n  disabled: true",
-        source: "actual dsh-api-remotes host row in the rc.3 composition",
+        source: "actual dsh-api-remotes host row in the alpha.2 composition",
       });
     }
 
@@ -2123,7 +2123,7 @@ async function main() {
     const installedOk = existsSync(installedPackage) && jsonFile(installedPackage).version === EXPECTED_PLUGIN_VERSION;
     addCheck(report, "desktop-profile:offline-install", installedOk ? "PASS" : "FAIL", installedOk
       ? "local TGZ is installed in the isolated desktop profile"
-      : "isolated profile did not contain dsh-plugin-bash-wsl@0.2.3 after install", {
+      : "isolated profile did not contain dsh-plugin-bash-wsl@0.2.4 after install", {
       packagePath: "profiles/desktop/node_modules/dsh-plugin-bash-wsl/package.json",
       installer: "bundled Desktop pnpm with isolated store/cache (no legacy-peer-deps)",
       closeObserved: install.cleanup?.closeObserved ?? false,
@@ -2305,9 +2305,9 @@ async function main() {
           };
           if (expectedVersion !== undefined) {
             // The bundled pnpm --offline path is only a historical/cache
-            // diagnostic.  It cannot prove (or veto) rc.3 compatibility: the
+            // diagnostic.  It cannot prove (or veto) alpha.2 compatibility: the
             // required old-version rejection is exercised separately by the
-            // actual rc.3 loader + Host runtime-negative probe.
+            // actual alpha.2 loader + Host runtime-negative probe.
             report.diagnostics.oldVersionPnpmCache.push({
               id: `desktop-negative:${id}`,
               status: "SKIP",
@@ -2315,7 +2315,7 @@ async function main() {
               detail: oldCompatibilityUnavailable
                 ? "ordinary old-version pnpm offline dependency/cache failure; retained as diagnostic-only SKIP"
                 : oldAcceptedWithoutRejection
-                  ? "ordinary old-version pnpm path did not exercise actual rc.3 compatibility rejection; retained as diagnostic-only SKIP"
+                  ? "ordinary old-version pnpm path did not exercise actual alpha.2 compatibility rejection; retained as diagnostic-only SKIP"
                   : negativePassed
                     ? "ordinary old-version pnpm path produced a rejection, but is not the required actual-host D-14 proof; retained as diagnostic-only SKIP"
                     : "ordinary old-version pnpm path lacked a qualification-safe result; retained as diagnostic-only SKIP",
@@ -2375,7 +2375,7 @@ async function main() {
         });
       }
     }
-    // Run the same official integration probe inside the real rc.3 context on
+    // Run the same official integration probe inside the real alpha.2 context on
     // the isolated workspace. This is separate from the three-mode security
     // child phases so CLI-02/10/12 persistent lifecycle evidence is not
     // mistaken for a CLI-only result.
@@ -2473,7 +2473,7 @@ async function run() {
     report = {
       schemaVersion: 1,
       generatedAt: new Date().toISOString(),
-      target: "Desktop 0.2.1-rc.3 / plugin 0.2.3",
+      target: "Desktop 0.2.2-alpha.2 / plugin 0.2.4",
       checks: [{ id: "desktop-probe:uncaught", status: "FAIL", detail: sanitize(error) }],
       phases: [],
       cleanup: {},

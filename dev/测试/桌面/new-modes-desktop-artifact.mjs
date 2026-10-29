@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Actual Desktop rc.3 acceptance probe for the two native shell modes.
+ * Actual Desktop alpha.2 acceptance probe for the two native shell modes.
  *
  * This file is deliberately independent from the older tools-only Desktop
  * probe.  It starts the installed Desktop runtime in Node mode (no window and
@@ -43,8 +43,8 @@ import { readDesktopRuntimeIdentity } from "./gui-candidate-binding.mjs";
 const ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const TEST_ROOT = join(ROOT, "测试");
 const RUN_ROOT = join(TEST_ROOT, "运行产物");
-const EXPECTED_DESKTOP_VERSION = "0.2.1-rc.3";
-const EXPECTED_PLUGIN_VERSION = "0.2.3";
+const EXPECTED_DESKTOP_VERSION = "0.2.2-alpha.2";
+const EXPECTED_PLUGIN_VERSION = "0.2.4";
 const EXPECTED_MODE_IDS = ["bash-wsl", "bash-git-bash"];
 const EXPECTED_MODE_NAMES = {
   "bash-wsl": "WSL 模式",
@@ -351,7 +351,7 @@ function inspectTarball(tgz) {
   const dependencyKeys = Object.keys(dependencies).sort();
   const peerRangeOk = manifest?.engines?.dsh === EXPECTED_DESKTOP_VERSION
     && Object.entries(peerVersions).every(([name, version]) =>
-      version === (name === "@deepseek-ai/cordis" ? "4.0.5" : EXPECTED_DESKTOP_VERSION));
+      version === (name === "@deepseek-ai/cordis" ? "4.0.6-alpha.1" : EXPECTED_DESKTOP_VERSION));
   const dependencyShapeOk = dependencyKeys.length === 1
     && dependencyKeys[0] === "@deepseek-ai/schemastery";
   const packageStatus = manifest?.name === "dsh-plugin-bash-wsl"
@@ -1733,7 +1733,7 @@ function schemaNames(service, scope = undefined) {
 }
 
 function toolFingerprint(service, name, scope = undefined) {
-  const tool = service?.get?.(name, scope);
+  const tool = service?.executable?.(name, scope);
   if (tool === undefined) return { exists: false };
   return {
     exists: true,
@@ -1766,13 +1766,15 @@ async function executeOwnedTool(service, name, agent, args, options = {}) {
   if (typeof service?.execute !== "function") throw new Error(`scoped ToolRuntime.execute is unavailable for ${name}`);
   const controller = options.signal === undefined ? new AbortController() : undefined;
   const callId = `desktop-new-mode-${name}-${process.pid}-${++toolCallSequence}`;
-  return service.execute({
-    name,
-    arguments: args,
+  const batch = await service.execute({
+    calls: [{ type: "tool-call", id: callId, name, arguments: JSON.stringify(args) }],
     agent,
-    callId,
     signal: options.signal ?? controller.signal,
   });
+  if (batch.results?.length !== 1 || batch.results[0]?.callId !== callId) {
+    throw new Error(`scoped native executor returned an uncorrelated batch for ${name}`);
+  }
+  return batch.results[0].result;
 }
 
 function profileFilesSnapshot(profile) {
@@ -2269,7 +2271,7 @@ async function enabledChildMain(argv) {
     const pluginEntry = loader?.entries?.().find((entry) => entry.options?.name === PLUGIN_ROW_NAME || entry.options?.id === "bash-wsl-backend-and-tools");
     pluginFiber = pluginEntry?.fiber;
     // The terminal registry is intentionally supplied by the plugin's own
-    // injected scope.  It is not a root Desktop service in rc.3; mode scopes
+    // injected scope.  It is not a root Desktop service in alpha.2; mode scopes
     // receive their own isolated terminal registry as well.
     const terminals = ctx.get("terminals") ?? pluginFiber?.ctx?.get?.("terminals");
     const prompts = ctx.get("systemPrompt");
@@ -2598,7 +2600,7 @@ async function enabledChildMain(argv) {
                 capability,
                 spawnEntry,
               });
-              // rc.3 may return a thenable handle whose public lifecycle methods
+              // alpha.2 may return a thenable handle whose public lifecycle methods
               // only exist after the native process is ready.  Resolve it here so
               // the evidence describes the actual public handle, not Promise
               // shape or the initial ConPTY pid=0 placeholder.
@@ -2692,7 +2694,7 @@ async function enabledChildMain(argv) {
               },
             });
           // The denial attempt must be released before changing permission:
-          // rc.3 correctly refuses a live persistent session mutation.  A
+          // alpha.2 correctly refuses a live persistent session mutation.  A
           // fresh owned Agent then proves the explicit danger retry path.
           try {
               const disposed = await disposeOwnedHandleBounded(handle, `${modeId}:restricted-agent-dispose`);
@@ -3857,7 +3859,7 @@ async function enabledChildMain(argv) {
           }
           // The returned persistent-tool output is the authoritative proof of
           // shell reuse: the second command observed an export from the first.
-          // rc.3's isolated terminal service may report no public snapshot once
+          // alpha.2's isolated terminal service may report no public snapshot once
           // a command has settled, so that optional observer is recorded rather
           // than turned into a false failure.
           const lifecycleOk = observerInstalled && positiveSpawnDelta > 0
@@ -4180,7 +4182,7 @@ async function enabledChildMain(argv) {
       if (typeof presets.inspectCompositions === "function") {
         return { apiAvailable: true, rows: presets.inspectCompositions(agentCtx) };
       }
-      // Desktop rc.3 does not export the later inventory helper.  Its
+      // Desktop alpha.2 does not export the later inventory helper.  Its
       // official composedPreset(owner) read is still a direct retained-revision
       // witness; use it and label the missing global inspector explicitly.
       return {
@@ -4582,10 +4584,10 @@ async function main() {
     const dshManifest = asar.readJson("dsh/package.json");
     const descriptor = asar.readJson("dsh/desktop-runtime.json");
     const versionOk = appManifest.version === EXPECTED_DESKTOP_VERSION && dshManifest.version === EXPECTED_DESKTOP_VERSION && descriptor.release?.version === EXPECTED_DESKTOP_VERSION && descriptor.platform === "win32" && descriptor.arch === "x64";
-    addCheck(report, "desktop-runtime-version", versionOk ? "PASS" : "FAIL", versionOk ? "installed app.asar is the expected Desktop rc.3 runtime" : "installed Desktop runtime version/platform metadata mismatched", { appVersion: appManifest.version, dshVersion: dshManifest.version, descriptorVersion: descriptor.release?.version ?? null, platform: descriptor.platform ?? null, arch: descriptor.arch ?? null });
+    addCheck(report, "desktop-runtime-version", versionOk ? "PASS" : "FAIL", versionOk ? "installed app.asar is the expected Desktop alpha.2 runtime" : "installed Desktop runtime version/platform metadata mismatched", { appVersion: appManifest.version, dshVersion: dshManifest.version, descriptorVersion: descriptor.release?.version ?? null, platform: descriptor.platform ?? null, arch: descriptor.arch ?? null });
     const actualAsarSha256 = sha256(paths.asar);
     const actualExeSha256 = sha256(paths.executable);
-    addCheck(report, "desktop-runtime-hashes", actualAsarSha256 === EXPECTED_ASAR_SHA256 && actualExeSha256 === EXPECTED_EXE_SHA256 ? "PASS" : "FAIL", actualAsarSha256 === EXPECTED_ASAR_SHA256 && actualExeSha256 === EXPECTED_EXE_SHA256 ? "installed Desktop ASAR/executable hashes match the frozen rc.3 fixture" : "installed Desktop ASAR/executable hash differs from the frozen fixture", { appAsarSha256: actualAsarSha256, executableSha256: actualExeSha256 });
+    addCheck(report, "desktop-runtime-hashes", actualAsarSha256 === EXPECTED_ASAR_SHA256 && actualExeSha256 === EXPECTED_EXE_SHA256 ? "PASS" : "FAIL", actualAsarSha256 === EXPECTED_ASAR_SHA256 && actualExeSha256 === EXPECTED_EXE_SHA256 ? "installed Desktop ASAR/executable hashes match the frozen alpha.2 fixture" : "installed Desktop ASAR/executable hash differs from the frozen fixture", { appAsarSha256: actualAsarSha256, executableSha256: actualExeSha256 });
     if (!versionOk || actualAsarSha256 !== EXPECTED_ASAR_SHA256 || actualExeSha256 !== EXPECTED_EXE_SHA256) return report;
     if (typeof options.tgz !== "string") {
       addCheck(report, "new-tgz-input", "SKIP", "--tgz was not supplied; no package/profile load was attempted");

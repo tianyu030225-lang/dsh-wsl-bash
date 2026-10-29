@@ -231,7 +231,7 @@ function makeToolFixture(mode: FixtureMode) {
     if (mode === "deadline-send-abort" && request.signal?.aborted) {
       throw new Error("WSL PTY send aborted before write");
     }
-    if (request.text === "stty -echo") {
+    if (request.text === "stty -echo; set +H") {
       if (mode === "init-failure") {
         session.status = { kind: "exited", exitCode: 1, signal: null };
         return {

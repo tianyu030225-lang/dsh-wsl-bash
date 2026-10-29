@@ -1,7 +1,8 @@
 /**
  * Persistent tool adapted from the MIT-licensed DeepSeek
  * dsh-tool-bash-persistent 0.2.0-rc.2 / 0.2.1-alpha.1, Copyright (c) 2026 DeepSeek.
- * Both supported hosts ship identical tool code. Keep its public ownership,
+ * History-expansion initialization is synchronized with DSH 0.2.2-alpha.2.
+ * Keep the original public ownership,
  * initialization, serialization, deadline and reset contract; additionally use
  * real incremental completion frames and bound the fallback accumulator.
  */
@@ -185,7 +186,9 @@ export async function apply(ctx: Context, config: Partial<PersistentConfig> = {}
           ownerCleanup.add(owner);
           owner.ctx.effect(() => () => { pending.delete(owner); live.delete(owner); }, "bash-wsl persistent owner cache cleanup");
         }
-        const result = await ctx.terminals.startSend(owner, spawned.sessionId, { text: "stty -echo", submit: true, signal: combinedSignal }).done;
+        // Match the host initialization: interactive history expansion can
+        // rewrite literal ! in model commands before the completion frame runs.
+        const result = await ctx.terminals.startSend(owner, spawned.sessionId, { text: "stty -echo; set +H", submit: true, signal: combinedSignal }).done;
         if (result.sessionStatus.kind === "exited" || result.waitReason === "timeout") throw new Error("persistent Bash did not accept initialization");
         return spawned.sessionId;
       } catch (error) {

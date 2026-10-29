@@ -1,36 +1,36 @@
-# dsh-plugin-bash-wsl 0.2.3
+# dsh-plugin-bash-wsl 0.2.4
 
 [English](README.md)
 
-> **开发迭代分支 `develop`**：用于后续 DSH 版本适配与插件迭代。本次 `0.2.3` / DSH `0.2.1-rc.3` 适配与自动化验证由 **Codex** 完成；Windows CI 与 WSL 探测已通过，尚未完成 Windows Desktop/GUI 交互实测，不代表正式发布。`master` 保留原有版本，本次不修改。
+> **开发迭代分支 `develop`**：用于后续 DSH 版本适配与插件迭代。本次 `0.2.4` / DSH `0.2.2-alpha.2` 适配与自动化验证由 **Codex** 完成；Windows CI、WSL 和 Desktop/GUI 均需记录本候选包的新结果，历史通过记录不适用于本版，不代表正式发布。`master` 保留原有版本，本次不修改。
 
-面向 Windows DSH 的原生 Git Bash 与 WSL 后端插件，当前版本为 `0.2.3`。桌面版与 CLI `0.2.1-rc.3` 共用同一个安装包。保留已有的 `pwsh` 工具，并为 Web/桌面版额外新增两个模式：
+面向 Windows DSH 的原生 Git Bash 与 WSL 后端插件，当前版本为 `0.2.4`。桌面版与 CLI `0.2.2-alpha.2` 共用同一个安装包。保留已有的 `pwsh` 工具，并为 Web/桌面版额外新增两个模式：
 
 - **WSL 模式**（`bash-wsl`）：保留标准模式其他能力，默认使用按 Agent 隔离的持久 WSL `bash`；
 - **Git Bash 模式**（`bash-git-bash`）：保留标准模式其他能力，默认使用持久原生 Git Bash `bash`，需要当前会话明确选择完全权限。
 
 两个模式都提供一次性 `wsl_bash`、`git_bash` 和官方 `pwsh`。它们读取实际运行宿主自带的标准模式组合，不替换原有模式，也不改变默认选择；用户另行修改标准模式的内容不会自动复制。无界面的 CLI 仍默认使用持久 WSL，模式下拉菜单属于 Web/桌面版功能。
 
-目标运行时为 Node.js `>=22`，只接受 DSH `0.2.1-rc.3`，不支持更早的 DSH；如需使用历史版本，请切换到对应标签查看说明。GitHub 源码公开与 npm 发布是两件事；当前尚未宣布 npm 发布，不要假定使用包名或未锁定的 `latest` 就能安装到本仓库的当前内容。
+目标运行时为 Node.js `>=24.9.0`，只接受 DSH `0.2.2-alpha.2`，不支持更早的 DSH；如需使用历史版本，请切换到对应标签查看说明。GitHub 源码公开与 npm 发布是两件事；当前尚未宣布 npm 发布，不要假定使用包名或未锁定的 `latest` 就能安装到本仓库的当前内容。
 
-本 `develop` 分支介绍当前 `0.2.3` 开发源码；默认分支 `master` 仍保留原有版本。历史标签和报告只对应各自的修订；`v0.1.0` 面向 DSH `0.1.0-rc.6`。
+本 `develop` 分支介绍当前 `0.2.4` 开发源码；默认分支 `master` 仍保留原有版本。历史标签和报告只对应各自的修订；`v0.1.0` 面向 DSH `0.1.0-rc.6`。
 
 公开的回归源码、smoke 脚本及夹具统一放在 [`dev/测试/`](dev/测试/)。本地运行产物保留在已忽略的根目录 `测试/运行产物/`，不进入 Git 或 npm 包。CI 将单元测试结果、smoke 诊断 JSON 和实际测试的 TGZ 上传为 Actions 产物。
 
-### 为什么更新到 0.2.3
+### 为什么更新到 0.2.4
 
-官方 [DSH `0.2.1-rc.3`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.3) 已发布，本版同步更新精确宿主校验、官方依赖、doctor 提示以及 CLI/桌面版验收脚本。rc.3 新增插件导航菜单、修复会话草稿恢复并更新 API Key 模型列表；插件所用的终端、沙箱和权限接口没有变化，两个模式的工具名、参数及权限边界保持一致。
+官方 [DSH `0.2.2-alpha.2`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.2-alpha.2) 已发布，本版将 Node.js 最低版本提高到 `24.9.0`，对齐 Cordis `4.0.6-alpha.1` 和 Schemastery `3.18.6-alpha.1`，并同步精确宿主校验与验收矩阵。CLI/桌面探测改用宿主所选的原生执行器，提交工具调用批次并校验返回调用 ID；持久 Bash 初始化增加 `set +H`，避免命令中的 `!` 被历史展开改写。两个模式的工具名、参数及权限边界保持一致。
 
-上一版 `0.2.2` 修复了 Windows/WSL CI 漏测问题：Windows 单元测试和真实 WSL/CLI 探测缺失或失败时会阻断 CI。更早的 `0.2.1` 适配了支持 **DeepSeek-V4.1-Flash-1017** 的 [DSH `0.2.1-rc.2`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.2)；这是宿主兼容适配，没有宣称模型性能提升。继续使用 DSH rc.2 的用户应保留 `0.2.2` 源码。
+`0.2.3` 对应 DSH `0.2.1-rc.3`，使用旧宿主时应保留相应源码。`0.2.2` 修复了 Windows/WSL CI 漏测问题：Windows 单元测试和真实 WSL/CLI 探测缺失或失败时会阻断 CI。更早的 `0.2.1` 适配了支持 **DeepSeek-V4.1-Flash-1017** 的 [DSH `0.2.1-rc.2`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.2)；这是宿主兼容适配，没有宣称模型性能提升。继续使用 DSH rc.2 的用户应保留 `0.2.2` 源码。
 
-## 0.2.3 兼容性与发布证据
+## 0.2.4 兼容性与发布证据
 
 | 宿主 | 支持的 DSH 版本 |
 | --- | --- |
-| 桌面版 | `0.2.1-rc.3` |
-| CLI | `0.2.1-rc.3` |
+| 桌面版 | `0.2.2-alpha.2` |
+| CLI | `0.2.2-alpha.2` |
 
-自动 CI 在 `develop`、`main`/`master` 推送、PR 和手动触发时运行，覆盖 Ubuntu/Windows 单元测试、8 个独立桌面离线回归文件（`pnpm run test:desktop-offline`）及真实 Windows CLI/WSL 安全、集成探测。绿色 CI 不等于完成桌面版/GUI 全量验收；`scripts/release-check.mjs` 中的交互验收仍需独立的新证据，这里不宣称 `0.2.3` 已通过完整桌面版/GUI 门禁。[0.2.0 双宿主报告](docs/testing-report-0.2.0.md)只对应 `v0.2.0` 的历史制品。每份结果都必须核对源码修订与准确 TGZ 的 SHA-256，同名文件或相同版本号不能证明是同一份已测制品。
+自动 CI 在 `develop`、`main`/`master` 推送、PR 和手动触发时运行，覆盖 Ubuntu/Windows 单元测试、8 个独立桌面离线回归文件（`pnpm run test:desktop-offline`）及真实 Windows CLI/WSL 安全、集成探测。绿色 CI 不等于完成桌面版/GUI 全量验收；`scripts/release-check.mjs` 中的交互验收仍需独立的新证据，这里不宣称 `0.2.4` 已通过完整桌面版/GUI 门禁。[0.2.0 双宿主报告](docs/testing-report-0.2.0.md)只对应 `v0.2.0` 的历史制品。每份结果都必须核对源码修订与准确 TGZ 的 SHA-256，同名文件或相同版本号不能证明是同一份已测制品。
 
 > **非官方社区项目。** 本插件是独立、社区维护的扩展，**与 DeepSeek 无隶属、背书或赞助关系**。"DeepSeek Harness"与"DSH"为其各自所有者的商标。插件使用官方公开服务与依赖；本插件的任何缺陷、安全问题或行为变更均由本仓库负责，与 DeepSeek 或 DSH 项目无关。
 
@@ -49,8 +49,8 @@ Git Bash restricted 模式失败关闭：被拒绝的命令启动零进程。一
 ## 安装要求
 
 - Windows，并已安装 Git Bash 和 WSL；
-- Node.js `>=22`；
-- 桌面版或 CLI DSH `0.2.1-rc.3`；
+- Node.js `>=24.9.0`；
+- 桌面版或 CLI DSH `0.2.2-alpha.2`；
 - 所有 WSL 模式需要所选发行版内的 `bwrap`、`script` 与 `realpath`；
 - Windows 集成测试需要可用的 Git Bash 可执行文件和 `wsl.exe`。
 
@@ -62,7 +62,7 @@ Git Bash restricted 模式失败关闭：被拒绝的命令启动零进程。一
 
 Git 不包含 `dist/` 和生成的 TGZ。GitHub 源码 ZIP 不是可直接安装的 DSH 插件包；检出目录中遗留的旧同名 TGZ 也不能当成后续版本使用。
 
-构建 `0.2.3` 源码需要 Windows Node.js `>=22`，以及 `package.json` 指定的 `pnpm@11.21.0`。克隆本仓库、选择要安装的源码修订后，在该检出目录中使用 Windows PowerShell 执行：
+构建 `0.2.4` 源码需要 Windows Node.js `>=24.9.0`，以及 `package.json` 指定的 `pnpm@11.21.0`。克隆本仓库、选择要安装的源码修订后，在该检出目录中使用 Windows PowerShell 执行：
 
 ```powershell
 pnpm install --frozen-lockfile
@@ -70,7 +70,7 @@ New-Item -ItemType Directory -Force -Path ".packages" | Out-Null
 pnpm pack --pack-destination ".packages"
 ```
 
-现有 `prepack` 会执行 `pnpm run build`，只清理和重建当前检出目录的 `dist/`；源码构建时不要省略开发依赖。生成的 `0.2.3` 安装包位于 `.packages/dsh-plugin-bash-wsl-0.2.3.tgz`，正式发布时应同时提供该包的校验值。这些是构建步骤，不代表新生成的包已经通过完整门禁。
+现有 `prepack` 会执行 `pnpm run build`，只清理和重建当前检出目录的 `dist/`；源码构建时不要省略开发依赖。生成的 `0.2.4` 安装包位于 `.packages/dsh-plugin-bash-wsl-0.2.4.tgz`，正式发布时应同时提供该包的校验值。这些是构建步骤，不代表新生成的包已经通过完整门禁。
 
 `file:` 或 hoisted 本地安装得到的是部署副本或硬链接；即使当前检出目录完成 clean rebuild，profile 中已安装文件的 inode 也可能没有更新。因此，只重建或只重启不能证明宿主已加载新代码。必须把新 TGZ 重新安装到准确的目标或隔离 profile，核对运行时 `installAnchor`，并比较已安装 `dist` 与当前构建的哈希。`link:` 只适合经过明确核验的本地开发，不能充当发布证据。
 
@@ -82,7 +82,7 @@ pnpm pack --pack-destination ".packages"
 
 ```powershell
 Get-Command dsh
-dsh plugin --profile web add "C:\work\dsh-wsl-bash\.packages\dsh-plugin-bash-wsl-0.2.3.tgz"
+dsh plugin --profile web add "C:\work\dsh-wsl-bash\.packages\dsh-plugin-bash-wsl-0.2.4.tgz"
 ```
 
 确认 `Get-Command dsh` 命中 Windows 安装入口。该命令针对其 `web` 配置；桌面版使用独立的 `desktop` 配置，请在 **设置 → 插件 → 添加插件** 中选择同一个 TGZ。装到 `web` 不等于装到桌面版。安装后重启对应宿主并新建会话。包元数据会加载 `cordis.patch.yml`；请保留已有 PowerShell bundle。最小隔离 headless 配置片段是：
@@ -194,7 +194,7 @@ dsh plugin --profile web remove dsh-plugin-bash-wsl
 
 | 现象 | 检查 |
 | --- | --- |
-| 插件不加载 | 确认插件为 `0.2.3`、Node `>=22`，实际宿主为 `0.2.1-rc.3`；不要忽略版本检查。 |
+| 插件不加载 | 确认插件为 `0.2.4`、Node `>=24.9.0`，实际宿主为 `0.2.2-alpha.2`；不要忽略版本检查。 |
 | CLI 可用但桌面版没有 | `web` 与 `desktop` 配置独立，确认真正运行的宿主加载了目标配置，安装后重启对应宿主。 |
 | `workspace-write` 不可用 | 运行 `doctor`；由宿主的正常系统流程安装 `bwrap`/`script` 后重启 DSH。插件不会降级到不受限执行。 |
 | 空格或中文路径失败 | 一次性工具可传 `workdir`；持久 `bash` 只接受 `command`，应在命令中使用正确引用的 `cd`，并遵守对应工作区边界。 |

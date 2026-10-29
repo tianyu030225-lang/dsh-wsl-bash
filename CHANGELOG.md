@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.4 — 2026-10-29
+
+- Target [DSH `0.2.2-alpha.2`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.2-alpha.2) exactly; require Node.js `>=24.9.0` and align the official dependency graph, Cordis `4.0.6-alpha.1` and Schemastery `3.18.6-alpha.1`. Run Windows/Ubuntu CI on Node 24.
+- Migrate registered-tool probes to the selected native executor’s batch API, with exact call/result correlation and executable lookups. Add installed-runtime regressions for schema/prompt assembly, denied execution with zero process starts, malformed arguments, and unavailable executors.
+- Synchronize persistent-shell initialization with upstream (`stty -echo; set +H`) so Bash history expansion cannot rewrite literal exclamation marks. Preserve incremental completion, output limits, cancellation, ownership and process cleanup.
+- Keep both additional shell modes, PowerShell, existing permission boundaries, historical evidence and exact older-host rejection. Desktop/GUI qualification still requires fresh target-runtime and candidate hashes; no formal Release or npm publication is implied.
+
 ## 0.2.3 — 2026-10-24
 
 - Retarget the exact Desktop/CLI host contract from DSH `0.2.1-rc.2` to

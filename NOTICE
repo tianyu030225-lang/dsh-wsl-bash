@@ -33,3 +33,7 @@ implementation (SHA-256 2cc6627cc2e02ab65960e124f8c249045024fffe2563ab3507f7fbed
 This adaptation additionally recognizes actual incremental completion frames
 and bounds its fallback buffer. It does not modify the installed host files.
 The upstream MIT copyright and license notice is retained in LICENSE.
+
+Persistent Bash history-expansion suppression (`stty -echo; set +H`) is
+synchronized with @deepseek-ai/dsh-tool-bash-persistent 0.2.2-alpha.2,
+upstream tag dsh-v0.2.2-alpha.2 (f3803c9), under the same MIT license.

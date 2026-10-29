@@ -115,7 +115,7 @@ export function runNativeModesReleaseGate(options) {
       `candidate/final=${candidateFinalIdentityOk ? "match" : "mismatch"}; fresh security/CLI/native-CLI=${freshCliCoreOk ? "PASS" : "missing"}`);
   } else if (!candidateDesktopCapability) {
     addResult(results, "new native modes Desktop backend qualification", "SKIP",
-      "actual Windows rc.3 Desktop executable/app.asar or native-mode probe is unavailable");
+      "actual Windows alpha.2 Desktop executable/app.asar or native-mode probe is unavailable");
   } else {
     const nativeModesProbe = spawnSync(process.execPath, [nativeModesDesktopProbePath, "--tgz", candidatePath], {
       cwd: root,

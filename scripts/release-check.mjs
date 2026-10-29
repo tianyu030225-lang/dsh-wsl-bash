@@ -5,7 +5,7 @@
  *
  * The script deliberately does not invoke `npm publish`, `git push`, or mutate
  * a user's host profile. The temporary profile install is local and offline;
- * Desktop and CLI 0.2.1-rc.3 bundles resolve from the installed host, and every result is
+ * Desktop and CLI 0.2.2-alpha.2 bundles resolve from the installed host, and every result is
  * reported as PASS/FAIL/SKIP.
  */
 
@@ -35,8 +35,8 @@ const root = resolve(import.meta.dirname, "..");
 const packageJsonPath = join(root, "package.json");
 const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
 const expectedName = "dsh-plugin-bash-wsl";
-const expectedVersion = "0.2.3";
-const expectedCliVersion = "0.2.1-rc.3";
+const expectedVersion = "0.2.4";
+const expectedCliVersion = "0.2.2-alpha.2";
 const expectedSecurityModes = ["read-only", "workspace-write", "danger-full-access"];
 const requiredSecurityCheckIds = [
   "SEC-01 WSL capability preflight",
@@ -1100,7 +1100,7 @@ function validateD16Evidence(evidence, tarball, options = {}) {
     "adapter reports a protocol failure");
   require(isSha256(adapter.sessionIdSha256), "owned session identity hash is missing");
   require(adapter.fixture === "gui-human-canonical-20261010-2340", "owned canonical fixture identity mismatch");
-  require(adapter.runtime === "DeepSeek Harness Desktop 0.2.1-rc.3", "Desktop rc.3 runtime identity mismatch");
+  require(adapter.runtime === "DeepSeek Harness Desktop 0.2.2-alpha.2", "Desktop alpha.2 runtime identity mismatch");
   require(isSha256(expectedTgzSha256) && adapter.tgzSha256 === expectedTgzSha256,
     "adapter TGZ SHA does not match this gate's fresh pack");
   if (candidateMode) {
@@ -1131,7 +1131,7 @@ function validateD16Evidence(evidence, tarball, options = {}) {
   require(isSha256(actualAsarSha256)
     && actualAsarSha256 === expectedDesktopAsarSha256
     && adapter.appAsarSha256 === actualAsarSha256,
-  "adapter app.asar SHA does not match the installed rc.3 artifact");
+  "adapter app.asar SHA does not match the installed alpha.2 artifact");
   if (candidateMode) {
     validateNativeGuiModeEnvelope(adapter.nativeModes, require);
   } else {
@@ -1168,7 +1168,7 @@ function validateD16Evidence(evidence, tarball, options = {}) {
   require(sameStringArray(callHashes, resultHashes), "tool result callIds do not match tool callIds in order");
   require(adapter.markers?.DSH_GUI_TURN1 === true && adapter.markers?.DSH_GUI_TURN2 === true,
     "both exact stdout markers were not proven");
-  // rc.3 isVisibleChatNode filters system-prompt rows out of the normal flow.
+  // alpha.2 isVisibleChatNode filters system-prompt rows out of the normal flow.
   // Actual Host prompt assembly/removal is mandatory in every Desktop phase
   // below; a hidden prompt must never be fabricated into visual evidence.
   require(adapter.turnStarts === 1 && adapter.turnEnded === true && adapter.turnEndKind === "completed",
@@ -1355,7 +1355,7 @@ function validateD16Evidence(evidence, tarball, options = {}) {
   return {
     ok: failures.length === 0,
     detail: failures.length === 0
-      ? "strict rc.3/TGZ/session/tool/UI/Windows+Linux cleanup evidence matched"
+      ? "strict alpha.2/TGZ/session/tool/UI/Windows+Linux cleanup evidence matched"
       : failures.slice(0, 12).join("; "),
   };
 }
@@ -1415,7 +1415,7 @@ function desktopRuntimeNegativeIsClean(evidence, oldTgz) {
     && evidence.acceptanceId === "D-14 old-version runtime rejection"
     && evidence.status === "PASS"
     && evidence.loaderStatus === "PASS"
-    && evidence.host?.desktopVersion === "0.2.1-rc.3"
+    && evidence.host?.desktopVersion === "0.2.2-alpha.2"
     && evidence.host?.executableSha256 === fileSha256(paths.executable)
     && evidence.host?.appAsarSha256 === fileSha256(paths.asar)
     && evidence.fixture?.name === expectedName
@@ -1500,9 +1500,9 @@ function assertPackageMetadata() {
     record("package metadata", "FAIL", `name=${packageJson.name}, expected ${expectedName}`);
   } else if (packageJson.version !== expectedVersion) {
     record("package metadata", "FAIL", `version=${packageJson.version}, expected ${expectedVersion}`);
-  } else if (packageJson.engines?.node !== ">=22") {
+  } else if (packageJson.engines?.node !== ">=24.9.0") {
     record("package metadata", "FAIL", `engines.node=${packageJson.engines?.node}`);
-  } else if (packageJson.engines?.dsh !== "0.2.1-rc.3") {
+  } else if (packageJson.engines?.dsh !== "0.2.2-alpha.2") {
     record("package metadata", "FAIL", `engines.dsh=${packageJson.engines?.dsh}`);
   } else {
     const peerEntries = Object.entries(packageJson.peerDependencies ?? {});
@@ -1535,7 +1535,7 @@ function assertPackageMetadata() {
     } else {
       record("package metadata", "PASS", `${expectedName}@${expectedVersion}, exact Desktop/CLI peer declarations, Node ${packageJson.engines.node}`);
       const dshPeerNames = requiredPeers.filter((name) => name !== "@deepseek-ai/cordis");
-      const expectedDshPeerSpec = "0.2.1-rc.3";
+      const expectedDshPeerSpec = "0.2.2-alpha.2";
       const currentHostMissing = dshPeerNames.filter((name) => {
         const spec = String(packageJson.peerDependencies[name]);
         return spec !== expectedDshPeerSpec;
@@ -1544,7 +1544,7 @@ function assertPackageMetadata() {
         ? `all DSH peers equal ${expectedDshPeerSpec}`
         : `DSH peers must equal ${expectedDshPeerSpec}: ${currentHostMissing.join(",")}`);
       const cordisSpec = String(packageJson.peerDependencies["@deepseek-ai/cordis"]);
-      const expectedCordisSpec = "4.0.5";
+      const expectedCordisSpec = "4.0.6-alpha.1";
       record("Cordis peer matrix", cordisSpec === expectedCordisSpec ? "PASS" : "FAIL", cordisSpec === expectedCordisSpec
         ? `Cordis peer equals ${expectedCordisSpec}`
         : `Cordis peer must equal ${expectedCordisSpec}, received ${cordisSpec}`);
@@ -1670,9 +1670,9 @@ try {
   }
   assertPackageMetadata();
   if (expectedDesktopAsarSha256 !== undefined && expectedDesktopExecutableSha256 !== undefined) {
-    record("Desktop reference artifact binding", "PASS", "explicit ASAR/executable reference hashes supplied; actual rc.3 runtime checks remain required");
+    record("Desktop reference artifact binding", "PASS", "explicit ASAR/executable reference hashes supplied; actual alpha.2 runtime checks remain required");
   } else {
-    skip("Desktop reference artifact binding", "set DSH_DESKTOP_ASAR_SHA256 and DSH_DESKTOP_EXE_SHA256 from the independently verified rc.3 distribution; rc.2 hashes are not reused");
+    skip("Desktop reference artifact binding", "set DSH_DESKTOP_ASAR_SHA256 and DSH_DESKTOP_EXE_SHA256 from the independently verified alpha.2 distribution; rc.2 hashes are not reused");
   }
   runPackCliContractRegression();
   let profileInstalled = false;
@@ -2058,13 +2058,13 @@ try {
   const preservedOldTgz = join(root, "dsh-plugin-bash-wsl-0.1.0.tgz");
   let desktopRuntimeNegativeOk = false;
   let d14OldVersionRejectionStatus = "SKIP";
-  let d14OldVersionRejectionDetail = "actual rc.3 old-version runtime rejection was not attempted";
+  let d14OldVersionRejectionDetail = "actual alpha.2 old-version runtime rejection was not attempted";
   if (process.platform !== "win32") {
-    skip("D-14 runtime-negative: actual rc.3 loader", "requires the Windows Desktop Electron host; WSL is not a Desktop target");
+    skip("D-14 runtime-negative: actual alpha.2 loader", "requires the Windows Desktop Electron host; WSL is not a Desktop target");
   } else if (!existsSync(preservedOldTgz)) {
-    skip("D-14 runtime-negative: actual rc.3 loader", "preserved 0.1.0 TGZ fixture is unavailable");
+    skip("D-14 runtime-negative: actual alpha.2 loader", "preserved 0.1.0 TGZ fixture is unavailable");
   } else if (!existsSync(desktopProbe)) {
-    record("D-14 runtime-negative: actual rc.3 loader", "FAIL", "dev/测试/桌面/desktop-context-probe.mjs is missing");
+    record("D-14 runtime-negative: actual alpha.2 loader", "FAIL", "dev/测试/桌面/desktop-context-probe.mjs is missing");
   } else {
     const runtimeNegative = spawnSync(process.execPath, [desktopProbe, "--desktop-runtime-negative", "--tgz", preservedOldTgz], {
       cwd: root,
@@ -2087,32 +2087,32 @@ try {
       try {
         runtimeNegativeEvidence = JSON.parse(readFileSync(runtimeNegativeEvidencePath, "utf8"));
       } catch (error) {
-        record("D-14 runtime-negative: actual rc.3 loader", "FAIL", `runtime-negative evidence JSON could not be read: ${error.message}`);
+        record("D-14 runtime-negative: actual alpha.2 loader", "FAIL", `runtime-negative evidence JSON could not be read: ${error.message}`);
       }
     }
     if (runtimeNegativeEvidence?.status === "SKIP") {
       d14OldVersionRejectionStatus = "SKIP";
       d14OldVersionRejectionDetail = runtimeNegativeEvidence.qualification ?? "actual Desktop loader capability was unavailable";
-      skip("D-14 runtime-negative: actual rc.3 loader", runtimeNegativeEvidence.qualification ?? "actual Desktop loader capability was unavailable");
+      skip("D-14 runtime-negative: actual alpha.2 loader", runtimeNegativeEvidence.qualification ?? "actual Desktop loader capability was unavailable");
       skip("D-14 full runtime-negative context", runtimeNegativeEvidence.fullD14Qualification ?? "actual Desktop context capability was unavailable");
     } else {
       const loaderNegativeOk = runtimeNegativeEvidence !== undefined
         && desktopRuntimeNegativeIsClean(runtimeNegativeEvidence, preservedOldTgz);
       if (loaderNegativeOk) {
-        record("D-14 runtime-negative: actual rc.3 loader", "PASS", "actual rc.3 loader rejected the preserved rc.6-peer plugin; host/TGZ SHA, active-layer omission, and loader child cleanup identities match");
+        record("D-14 runtime-negative: actual alpha.2 loader", "PASS", "actual alpha.2 loader rejected the preserved rc.6-peer plugin; host/TGZ SHA, active-layer omission, and loader child cleanup identities match");
       } else {
         d14OldVersionRejectionStatus = "FAIL";
         d14OldVersionRejectionDetail = runtimeNegativeEvidence?.qualification
-          ?? "actual rc.3 loader rejection evidence failed its identity/lifecycle assertions";
-        record("D-14 runtime-negative: actual rc.3 loader", "FAIL", (runtimeNegativeEvidence?.qualification
+          ?? "actual alpha.2 loader rejection evidence failed its identity/lifecycle assertions";
+        record("D-14 runtime-negative: actual alpha.2 loader", "FAIL", (runtimeNegativeEvidence?.qualification
           ?? `structured runtime-negative evidence was unavailable (exit=${runtimeNegative.status}, output=${runtimeNegativeOutput.slice(-900)})`).replace(/\s+/g, " "));
       }
       if (loaderNegativeOk && runtimeNegativeEvidence !== undefined
         && desktopRuntimeNegativeContextIsClean(runtimeNegativeEvidence)) {
         desktopRuntimeNegativeOk = true;
         d14OldVersionRejectionStatus = "PASS";
-        d14OldVersionRejectionDetail = "actual rc.3 loader and runProfile/Host context independently rejected the old peer and proved old tool/prompt absence with strict identities and cleanup";
-        record("D-14 full runtime-negative context", "PASS", "actual rc.3 runProfile mounted the owned old fixture and proved no old tools/prompt registration with clean Host child lifecycle");
+        d14OldVersionRejectionDetail = "actual alpha.2 loader and runProfile/Host context independently rejected the old peer and proved old tool/prompt absence with strict identities and cleanup";
+        record("D-14 full runtime-negative context", "PASS", "actual alpha.2 runProfile mounted the owned old fixture and proved no old tools/prompt registration with clean Host child lifecycle");
       } else if (runtimeNegativeEvidence?.fullD14Status === "SKIP") {
         if (loaderNegativeOk) {
           d14OldVersionRejectionStatus = "SKIP";
@@ -2176,7 +2176,7 @@ try {
     // The preserved old TGZ's ordinary pnpm --offline install remains a
     // diagnostic SKIP when its generic dependency cache is absent. It is not
     // the D-14 version-compatibility assertion; that required assertion is
-    // recorded separately below from the actual rc.3 loader and Host context.
+    // recorded separately below from the actual alpha.2 loader and Host context.
     const desktopSecurityRequiredIds = [
       "CLI-01 official services, version, and registration",
       ...requiredSecurityCheckIds,
@@ -2267,7 +2267,7 @@ try {
         ?? desktopEvidence?.probeIdentity?.installedProbeObserverSha256,
       probeObserverHashesMatch: desktopEvidence?.probeIdentity?.probeObserverHashesMatch,
     }, sourceProbeIndexSha256);
-    const desktopRuntimeOk = desktopEvidence?.target === "Desktop 0.2.1-rc.3 / plugin 0.2.3"
+    const desktopRuntimeOk = desktopEvidence?.target === "Desktop 0.2.2-alpha.2 / plugin 0.2.4"
       && desktopTopChecks.find((check) => check?.id === "desktop-runtime:version")?.status === "PASS";
     const desktopApprovalVariantOk = desktopEvidence?.approvalVariant?.mode === "no-remote-answerer"
       && desktopEvidence?.approvalVariant?.disabled === true
@@ -2310,17 +2310,17 @@ try {
       const hasFail = /\bFAIL\b|\b[1-9]\d* failed\b/i.test(probeOutput);
       const hasSkip = /\bSKIP\b|\b[1-9]\d* skipped\b/i.test(probeOutput);
       if (probeCleanup?.reaped === false) record("real Desktop context probe", "FAIL", "timed-out Desktop child process tree was not proven reaped");
-      else if (desktopEvidence === undefined && hasSkip && !hasFail) skip("real Desktop context probe", `${probeSummary ?? "Desktop capability unavailable"}; structured rc.3 evidence was not available`);
+      else if (desktopEvidence === undefined && hasSkip && !hasFail) skip("real Desktop context probe", `${probeSummary ?? "Desktop capability unavailable"}; structured alpha.2 evidence was not available`);
       else record("real Desktop context probe", "FAIL", (probe.error?.message
             ?? `Desktop evidence incomplete: summary=${probeSummary ?? "missing"}; hash=${desktopHashOk ? "match" : "mismatch"}; probe=${desktopProbeIdentityOk ? "match" : "mismatch"}; runtime=${desktopRuntimeOk ? "match" : "mismatch"}; runtime-negative=${desktopRuntimeNegativeOk ? "pass" : "missing"}; approval=${desktopApprovalVariantOk ? "no-remote" : "unexpected"}; oldcache=${desktopOldPnpmCacheDiagnosticOk ? "diagnostic-only" : "misclassified"}; top=${topChecksComplete ? "complete" : "incomplete"}; phases=${phaseShapeOk ? "complete" : "incomplete"}; preset=${phaseAudits.filter((audit) => !audit.presetComplete).map((audit) => audit.label).join(",") || "complete"}; cleanup=${desktopCleanupOk ? "proven" : "unproven"}; shared=${phaseAudits.filter((audit) => !audit.sharedComplete).map((audit) => audit.label).join(",") || "complete"}; integration=${desktopIntegrationComplete ? "complete" : "incomplete"}`).slice(-1200));
     } else {
-      record("real Desktop context probe", "PASS", `${probeSummary}; rc.3 JSON, per-phase SEC01-16, fresh TGZ SHA, and child cleanup verified`);
+      record("real Desktop context probe", "PASS", `${probeSummary}; alpha.2 JSON, per-phase SEC01-16, fresh TGZ SHA, and child cleanup verified`);
     }
   }
 
   // Registered low-cap Desktop regression: the dedicated output-cap suite
   // applies a test-only 4/8-byte profile overlay and exercises real
-  // wsl_bash/git_bash registrations in the rc.3 Host context. Its aggregate
+  // wsl_bash/git_bash registrations in the alpha.2 Host context. Its aggregate
   // may retain the ordinary old-cache SKIP, so gate the dedicated PASS IDs and
   // strict identity/cleanup instead of treating the aggregate as PASS.
   if (securityTgz === undefined || !existsSync(securityTgz)) {
@@ -2374,7 +2374,7 @@ try {
       && desktopCapPhase?.close?.kill?.closeObserved === true
       && desktopCapPhase?.close?.kill?.reaped === true
       && desktopCapPhase?.close?.kill?.aliveAfter === false;
-    const desktopCapHostOk = desktopCapEvidence?.target === "Desktop 0.2.1-rc.3 / plugin 0.2.3"
+    const desktopCapHostOk = desktopCapEvidence?.target === "Desktop 0.2.2-alpha.2 / plugin 0.2.4"
       && desktopCapEvidence?.package?.tgzSha256 === fileSha256(securityTgz)
       && probeIdentityIsClean({
         probeSourceIndexSha256: desktopCapEvidence?.probeIdentity?.sourceProbeIndexSha256,
@@ -2412,7 +2412,7 @@ try {
         record("real Desktop registered malformed UTF-8 output-cap probe", "FAIL", `dedicated output-cap evidence incomplete: host=${desktopCapHostOk ? "match" : "mismatch"}; phase=${desktopCapPhaseClean ? "clean" : "unclean"}; cleanup=${desktopCapEvidence?.cleanup?.temporaryRootRemoved === true ? "removed" : "unproven"}`);
       }
     } else if (desktopCapComplete) {
-      record("real Desktop registered malformed UTF-8 output-cap probe", "PASS", "registered wsl_bash and git_bash passed the malformed UTF-8 low-cap probe in actual rc.3 context against the fresh candidate TGZ");
+      record("real Desktop registered malformed UTF-8 output-cap probe", "PASS", "registered wsl_bash and git_bash passed the malformed UTF-8 low-cap probe in actual alpha.2 context against the fresh candidate TGZ");
     } else {
       const failedDedicated = desktopCapChecks.filter((check) => check?.status === "FAIL").map((check) => check.id).join(",");
       record("real Desktop registered malformed UTF-8 output-cap probe", "FAIL", `Desktop output-cap evidence incomplete: failed=${failedDedicated || "none"}; host=${desktopCapHostOk ? "match" : "mismatch"}; phase=${desktopCapPhaseClean ? "clean" : "unclean"}; child=${desktopCapCleanup?.reaped === false ? "unreaped" : "reaped-or-not-timed-out"}`);
