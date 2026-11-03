@@ -57,6 +57,7 @@
     "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "test:prepare-offline-cache": "node dev/\u6d4b\u8bd5/CLI/prepare-offline-cache.mjs",
     "test:desktop-offline": "node --test dev/\u6d4b\u8bd5/\u684c\u9762/combine-owned-gui-native-evidence.offline.test.mjs dev/\u6d4b\u8bd5/\u684c\u9762/desktop-context-probe.identity.offline.test.mjs dev/\u6d4b\u8bd5/\u684c\u9762/git-normal-close-gap-evidence.offline.test.mjs dev/\u6d4b\u8bd5/\u684c\u9762/native-modes-desktop-cancel.offline.test.mjs dev/\u6d4b\u8bd5/\u684c\u9762/native-modes-release-validator.offline.test.mjs dev/\u6d4b\u8bd5/\u684c\u9762/new-modes-desktop-artifact.raw-observer.offline.test.mjs dev/\u6d4b\u8bd5/\u684c\u9762/output-cap-gate.offline.test.mjs dev/\u6d4b\u8bd5/\u684c\u9762/run-owned-gui-session.offline.test.mjs",
     "test:watch": "vitest",
     "smoke:integration": "node dev/\u6d4b\u8bd5/smoke/integration.mjs",
