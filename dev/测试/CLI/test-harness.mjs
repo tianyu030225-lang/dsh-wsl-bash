@@ -53,7 +53,8 @@ export function sanitizeDiagnostic(value) {
   return String(value)
     .replaceAll(PROJECT_ROOT, "<project-root>")
     .replace(/([A-Za-z]:[\\/]Users[\\/])[^\\/\r\n]+/g, "$1<user>")
-    .replace(/([\\/]mnt[\\/]\w[\\/]Users[\\/])[^\\/\r\n]+/g, "$1<user>");
+    .replace(/([\\/]mnt[\\/]\w[\\/]Users[\\/])[^\\/\r\n]+/g, "$1<user>")
+    .replace(/((?:_authToken|_auth|authorization|password|api[_-]?key)\s*[:=]\s*)[^\r\n]+/gi, "$1<redacted>");
 }
 
 export class SkipError extends Error {
@@ -591,9 +592,11 @@ export function ownedPnpmDiagnostics(context) {
   return parts.join("\n").slice(-16000);
 }
 
-function requireSuccessfulCli(result, description, context) {
+export function requireSuccessfulCli(result, description, context) {
   const lifecycle = childLifecycleEvidence(result);
-  let diagnostic = sanitizeDiagnostic(result.error ?? result.stderr);
+  // pnpm writes errors to stdout too; retaining only wrapper stderr loses
+  // the actual installation failure when CLI mode inherits pnpm's streams.
+  let diagnostic = sanitizeDiagnostic([result.error, result.stderr, result.stdout].filter(Boolean).join("\n"));
   if ((!lifecycle.ok || result.exitCode !== 0) && context !== undefined) {
     try {
       const log = ownedPnpmDiagnostics(context);
@@ -602,7 +605,7 @@ function requireSuccessfulCli(result, description, context) {
       diagnostic += `\nOwned pnpm diagnostic unavailable: ${sanitizeDiagnostic(error)}`;
     }
   }
-  if (!lifecycle.ok) throw new Error(`${description}: child lifecycle was not clean: ${JSON.stringify(lifecycle)} ${diagnostic}`);
+  if (!lifecycle.ok) throw new Error(`${description}: CLI command did not succeed: ${JSON.stringify(lifecycle)} ${diagnostic}`);
   if (result.exitCode !== 0) {
     if (/(pnpm was not found|ERR_PNPM_NO_OFFLINE_META|ERR_PNPM_META_FETCH_FAIL|ERR_PNPM_FETCH|offline.*(?:metadata|package)|could not resolve.*offline)/i.test(diagnostic)) {
       throw new SkipError(`${description} capability is unavailable: offline package-manager dependency/cache is missing`);

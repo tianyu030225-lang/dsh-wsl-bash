@@ -2,9 +2,14 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const { RUN_ROOT, ownedPnpmDiagnostics } = await import(new URL("../CLI/test-harness.mjs", import.meta.url).href);
+const { RUN_ROOT, ownedPnpmDiagnostics, requireSuccessfulCli } = await import(new URL("../CLI/test-harness.mjs", import.meta.url).href);
 
 describe("owned CLI installer diagnostics", () => {
+  it("retains pnpm errors printed to stdout alongside wrapper stderr", () => {
+    const result = { exitCode: 1, stdout: "ERR_PNPM_FIXTURE offline metadata missing", stderr: "wrapper failed" };
+    expect(() => requireSuccessfulCli(result, "fixture install")).toThrow(/ERR_PNPM_FIXTURE/);
+    expect(() => requireSuccessfulCli(result, "fixture install")).toThrow(/wrapper failed/);
+  });
   it("retains the bounded error tail and removes credential-shaped values", () => {
     mkdirSync(RUN_ROOT, { recursive: true });
     const root = mkdtempSync(join(RUN_ROOT, "installer-diagnostic-"));
