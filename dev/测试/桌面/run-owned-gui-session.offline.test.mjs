@@ -144,7 +144,7 @@ function snapshot(sessionId = "owned-session") {
   };
 }
 
-test("snapshot validation follows the alpha.2 wire shape and owns the created session", () => {
+test("snapshot validation follows the alpha.3 wire shape and owns the created session", () => {
   const value = snapshot();
   const shape = snapshotShapeDiagnostic(value, "owned-session");
   assert.equal(shape.valid, true);
@@ -676,18 +676,18 @@ test("malformed official Remote frames are rejected", () => {
   assert.throws(() => parseServerFrame("not-json"), /not JSON/);
   assert.throws(() => parseServerFrame(JSON.stringify({
     type: "item", streamId: "s", value: {}, extra: true,
-  })), /violates alpha\.2 schema/);
+  })), /violates alpha\.3 schema/);
   assert.throws(() => parseServerFrame(JSON.stringify({
     type: "item", streamId: "s",
-  })), /violates alpha\.2 schema/);
+  })), /violates alpha\.3 schema/);
   assert.throws(() => parseServerFrame(JSON.stringify({
     type: "error", streamId: "s", error: {
       code: "E", message: "bad", details: {}, extra: "unexpected",
     },
-  })), /violates alpha\.2 schema/);
+  })), /violates alpha\.3 schema/);
 });
 
-test("alpha.2 follow request omits assistantStream or uses only literal true", () => {
+test("alpha.3 follow request omits assistantStream or uses only literal true", () => {
   const omitted = buildFollowRequest("session-id");
   assert.deepEqual(omitted, {
     address: { kind: "session", sessionId: "session-id" },

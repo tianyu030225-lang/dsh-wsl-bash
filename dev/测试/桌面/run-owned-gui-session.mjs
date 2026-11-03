@@ -4,11 +4,11 @@
  * Run one bounded real Desktop session turn against the owned, already
  * authenticated fixture.
  *
- * This is deliberately a narrow Node adapter for the alpha.2 wire contract. The
+ * This is deliberately a narrow Node adapter for the alpha.3 wire contract. The
  * shipped Client packages are browser bundles registered through
  * window.__ModuleLoader__, so they are not imported as a complete Client here.
  * The HTTP envelope, authenticated root exchange, Remote mux frames, and
- * session schemas below are copied from the installed alpha.2 sources:
+ * session schemas below are copied from the installed alpha.3 sources:
  *   dsh-client-connection/lib/client.js
  *   dsh-client-connection/lib/index.js
  *   dsh-api-gateway/lib/client.js
@@ -95,8 +95,8 @@ async function loadWebSocketConstructor() {
   const cliAnchor = join(appData, "npm", "node_modules", "@deepseek-ai", "dsh", "package.json");
   if (!existsSync(cliAnchor)) throw new Error("matching Windows CLI DSH package is missing");
   const cliManifest = JSON.parse(readFileSync(cliAnchor, "utf8"));
-  if (cliManifest.version !== "0.2.2-alpha.2") {
-    throw new Error(`Windows CLI DSH ${String(cliManifest.version)} does not match Desktop 0.2.2-alpha.2`);
+  if (cliManifest.version !== "0.2.2-alpha.3") {
+    throw new Error(`Windows CLI DSH ${String(cliManifest.version)} does not match Desktop 0.2.2-alpha.3`);
   }
   const hostRequire = createRequire(cliAnchor);
   const modulePath = hostRequire.resolve("ws");
@@ -493,9 +493,9 @@ function markerLine(text, expectedLine) {
 }
 
 /**
- * The alpha.2 tool/result event carries the rendered tool message only.  The
+ * The alpha.3 tool/result event carries the rendered tool message only.  The
  * persistent Bash plugin publishes its exit status in that official rendered
- * text; alpha.2 does not add an exitCode/rawFrame field to tool/result data.
+ * text; alpha.3 does not add an exitCode/rawFrame field to tool/result data.
  */
 function parseRenderedExitCode(text) {
   if (typeof text !== "string") return undefined;
@@ -660,7 +660,7 @@ function parseServerFrame(raw) {
     && typeof value.error.code === "string"
     && typeof value.error.message === "string"
     && isRecord(value.error.details)) return value;
-  throw new Error("official Remote stream frame violates alpha.2 schema");
+  throw new Error("official Remote stream frame violates alpha.3 schema");
 }
 
 class AsyncQueue {
@@ -1218,7 +1218,7 @@ function summarizeEvent(event, state) {
       || typeof callId !== "string"
       || callId.length === 0
       || typeof data.arguments !== "string") {
-      failState(state, "tool/call lacks the alpha.2 turn/step/callId/name/arguments identity");
+      failState(state, "tool/call lacks the alpha.3 turn/step/callId/name/arguments identity");
       return;
     }
     if (name !== EXPECTED_TOOL_NAME) {
@@ -1402,7 +1402,7 @@ function projectionMatchesTarget(modelSelection, target) {
 
 function buildFollowRequest(sessionId, assistantStream = undefined) {
   if (assistantStream === false) {
-    throw new Error("alpha.2 session/follow assistantStream only accepts literal true or omission");
+    throw new Error("alpha.3 session/follow assistantStream only accepts literal true or omission");
   }
   return {
     address: { kind: "session", sessionId },
@@ -1618,7 +1618,7 @@ async function main() {
     },
     status: "RUNNING",
     fixture: FIXTURE_ID,
-    runtime: "DeepSeek Harness Desktop 0.2.2-alpha.2",
+    runtime: "DeepSeek Harness Desktop 0.2.2-alpha.3",
     tgzSha256,
     candidateBinding: {
       tgzRelativePath: candidate.tgzRelativePath,
@@ -1984,7 +1984,7 @@ async function main() {
       type: "open",
       streamId,
       endpoint: "session/follow",
-      // alpha.2 accepts assistantStream only when it is the literal true. Omit it
+      // alpha.3 accepts assistantStream only when it is the literal true. Omit it
       // to request the journal event/snapshot union used by this adapter.
       payload: { args: { request: buildFollowRequest(sessionId) } },
     }));
