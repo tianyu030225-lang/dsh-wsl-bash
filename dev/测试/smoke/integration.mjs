@@ -112,6 +112,9 @@ async function main() {
     return result;
   }, {});
   console.log(`CLI smoke integration: ${counts.PASS ?? 0} passed, ${counts.SKIP ?? 0} skipped, ${counts.FAIL ?? 0} failed`);
+  for (const check of report.checks.filter((check) => check.status === "FAIL")) {
+    console.error(`${check.id}: ${check.detail}`);
+  }
   console.log(`Evidence: ${evidencePath}`);
   process.exitCode = report.status === "PASS" ? 0 : report.status === "SKIP" ? 2 : 1;
 }

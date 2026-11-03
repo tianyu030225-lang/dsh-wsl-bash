@@ -565,9 +565,43 @@ function configureIsolatedPersistentTimeout(context, oneShotLimits = undefined) 
   };
 }
 
-function requireSuccessfulCli(result, description) {
+// alpha.3 moves package-manager output to per-operation files. Read only
+// bounded regular files inside this test-owned profile before cleanup.
+export function ownedPnpmDiagnostics(context) {
+  const owned = realpathSync(context.root);
+  assertOwnedPath(realpathSync(RUN_ROOT), owned);
+  const profile = realpathSync(profileDir(context));
+  assertOwnedPath(owned, profile);
+  const logs = join(profile, ".plugin-manager", "logs");
+  if (!existsSync(logs)) return "";
+  const logsRoot = realpathSync(logs);
+  assertOwnedPath(profile, logsRoot);
+  const parts = [];
+  for (const entry of readdirSync(logsRoot, { withFileTypes: true }).slice(-5)) {
+    if (!entry.isDirectory() || !entry.name.startsWith("operation-")) continue;
+    const path = join(logsRoot, entry.name, "pnpm.log");
+    if (!existsSync(path)) continue;
+    const actual = realpathSync(path);
+    assertOwnedPath(logsRoot, actual);
+    const info = statSync(actual);
+    if (!info.isFile() || info.size > MAX_CHILD_OUTPUT_BYTES) continue;
+    parts.push(sanitizeDiagnostic(readFileSync(actual, "utf8").slice(-8000))
+      .replace(/((?:_authToken|_auth|authorization|password|api[_-]?key)\s*[:=]\s*)[^\r\n]+/gi, "$1<redacted>"));
+  }
+  return parts.join("\n").slice(-16000);
+}
+
+function requireSuccessfulCli(result, description, context) {
   const lifecycle = childLifecycleEvidence(result);
-  const diagnostic = sanitizeDiagnostic(result.error ?? result.stderr);
+  let diagnostic = sanitizeDiagnostic(result.error ?? result.stderr);
+  if ((!lifecycle.ok || result.exitCode !== 0) && context !== undefined) {
+    try {
+      const log = ownedPnpmDiagnostics(context);
+      if (log) diagnostic += `\nOwned pnpm diagnostic:\n${log}`;
+    } catch (error) {
+      diagnostic += `\nOwned pnpm diagnostic unavailable: ${sanitizeDiagnostic(error)}`;
+    }
+  }
   if (!lifecycle.ok) throw new Error(`${description}: child lifecycle was not clean: ${JSON.stringify(lifecycle)} ${diagnostic}`);
   if (result.exitCode !== 0) {
     if (/(pnpm was not found|ERR_PNPM_NO_OFFLINE_META|ERR_PNPM_META_FETCH_FAIL|ERR_PNPM_FETCH|offline.*(?:metadata|package)|could not resolve.*offline)/i.test(diagnostic)) {
@@ -628,7 +662,7 @@ export async function prepareIsolatedProfile(root, label = "cli", options = {}) 
     workspace: context.workspace,
     args: [...addArgs, pluginTgz],
   });
-  requireSuccessfulCli(pluginInstall, "isolated plugin install");
+  requireSuccessfulCli(pluginInstall, "isolated plugin install", context);
   context.persistentTimeout = configureIsolatedPersistentTimeout(
     context,
     options.oneShotLimits,
@@ -638,7 +672,7 @@ export async function prepareIsolatedProfile(root, label = "cli", options = {}) 
     workspace: context.workspace,
     args: [...addArgs, probePackage],
   });
-  requireSuccessfulCli(probeInstall, "isolated CLI probe install");
+  requireSuccessfulCli(probeInstall, "isolated CLI probe install", context);
   const sourceDist = join(PROJECT_ROOT, "dist");
   const installedDist = join(profileDir(context), "node_modules", "dsh-plugin-bash-wsl", "dist");
   if (!existsSync(sourceDist) || !existsSync(installedDist)) {
