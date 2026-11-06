@@ -106,7 +106,7 @@ console.log(JSON.stringify({
   started: true,
   pid: child.pid,
   fixture: FIXTURE_ID,
-  runtime: "DeepSeek Harness Desktop 0.2.2-alpha.2",
+  runtime: "DeepSeek Harness Desktop 0.2.2-alpha.3",
   tgzSha256: candidate.tgzSha256,
   candidateBinding: {
     tgzRelativePath: candidate.tgzRelativePath,

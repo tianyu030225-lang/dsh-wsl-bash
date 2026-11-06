@@ -123,6 +123,9 @@ jobs:
           "DSH_WINDOWS_CLI_ENTRY=$((Resolve-Path 'node_modules/@deepseek-ai/dsh/lib/bin.js').Path)" >> $env:GITHUB_ENV
           Get-FileHash ".packages/dsh-plugin-bash-wsl-$version.tgz" -Algorithm SHA256
 
+      - name: Prepare runtime metadata for isolated offline install
+        run: pnpm run test:prepare-offline-cache
+
       - name: Real security probe (PTY geometry + interop escape)
         shell: pwsh
         run: node dev/测试/smoke/security-probe.mjs

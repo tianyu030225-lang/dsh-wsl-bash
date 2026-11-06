@@ -1571,7 +1571,7 @@ async function inspectServices(ctx, api) {
   const names = tools.schemas().map((schema) => schema.name);
   const backends = terminals.listBackends();
   const hostVersion = api.readDshVersion(profileContext.installAnchor);
-  assert(hostVersion === "0.2.2-alpha.2", `unexpected host version ${hostVersion}`);
+  assert(hostVersion === "0.2.2-alpha.3", `unexpected host version ${hostVersion}`);
   assert(names.includes("wsl_bash"), "wsl_bash is not registered in the CLI context");
   assert(names.includes("git_bash"), "git_bash is not registered in the CLI context");
   assert(names.includes("bash"), "official persistent bash tool is not registered in the CLI context");
@@ -1612,7 +1612,7 @@ async function executeOfficialRaw(ctx, agent, name, command, signal = undefined,
     signalAborted: signal?.aborted === true,
   });
   try {
-    // alpha.2 dispatches complete model-call batches through the selected executor.
+    // alpha.3 dispatches complete model-call batches through the selected executor.
     const batch = await tools.execute({
       calls: [{ type: "tool-call", id: callId, name, arguments: JSON.stringify({ ...extraArguments, command }) }],
       agent,

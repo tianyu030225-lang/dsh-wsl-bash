@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.5 — 2026-11-03
+
+- Target [DSH `0.2.2-alpha.3`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.2-alpha.3) exactly, with Cordis `4.0.6-alpha.2` and Schemastery `3.18.6-alpha.2`; keep Node.js `>=24.9.0`. Align metadata, lockfile, runtime/doctor guards and live CLI/Desktop qualification identities.
+- Revalidate the updated Cordis Core/Loader/Include contracts. Add installed-runtime regressions proving that configuration updates await old-instance cleanup and injected services survive until dependent asynchronous teardown completes. Preserve both shell modes and the updated Standard template, including its `applyPatch: false` setting.
+- Keep existing terminal, subprocess, sandbox, native-executor batch, literal-history-token and ownership/cleanup behavior. Reject older alpha.2 and unverified future hosts before registration. Preserve historical reports and attribution; this source iteration does not establish full Desktop/GUI qualification or publish a formal release.
+
 ## 0.2.4 — 2026-10-29
 
 - Target [DSH `0.2.2-alpha.2`](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.2-alpha.2) exactly; require Node.js `>=24.9.0` and align the official dependency graph, Cordis `4.0.6-alpha.1` and Schemastery `3.18.6-alpha.1`. Run Windows/Ubuntu CI on Node 24.

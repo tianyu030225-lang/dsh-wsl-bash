@@ -38,7 +38,7 @@ function input(args: Record<string, unknown>) {
   };
 }
 
-describe("alpha.2 installed native-executor compatibility", () => {
+describe("alpha.3 installed native-executor compatibility", () => {
   it("routes registered tools through batch dispatch and retains zero-process denial", async () => {
     const { ctx, spawn } = await setup();
     try {

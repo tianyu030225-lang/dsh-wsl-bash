@@ -41,8 +41,8 @@ export const WINDOWS_CLI_ENTRY_DEFAULT = WINDOWS_USER_PROFILE === undefined
   ? ""
   : `${WINDOWS_USER_PROFILE}\\AppData\\Roaming\\npm\\node_modules\\@deepseek-ai\\dsh\\lib\\bin.js`;
 export const WINDOWS_NODE_DEFAULT = "node.exe";
-export const EXPECTED_CLI_VERSION = "0.2.2-alpha.2";
-export const EXPECTED_PLUGIN_VERSION = "0.2.4";
+export const EXPECTED_CLI_VERSION = "0.2.2-alpha.3";
+export const EXPECTED_PLUGIN_VERSION = "0.2.5";
 export const MAX_CHILD_OUTPUT_BYTES = 2 * 1024 * 1024;
 // Test-only override applied inside each isolated profile.  Production plugin
 // files and the source patch remain untouched; this makes the persistent-shell
@@ -53,7 +53,8 @@ export function sanitizeDiagnostic(value) {
   return String(value)
     .replaceAll(PROJECT_ROOT, "<project-root>")
     .replace(/([A-Za-z]:[\\/]Users[\\/])[^\\/\r\n]+/g, "$1<user>")
-    .replace(/([\\/]mnt[\\/]\w[\\/]Users[\\/])[^\\/\r\n]+/g, "$1<user>");
+    .replace(/([\\/]mnt[\\/]\w[\\/]Users[\\/])[^\\/\r\n]+/g, "$1<user>")
+    .replace(/((?:_authToken|_auth|authorization|password|api[_-]?key)\s*[:=]\s*)[^\r\n]+/gi, "$1<redacted>");
 }
 
 export class SkipError extends Error {
@@ -220,7 +221,7 @@ export function assertWindowsCliAvailable() {
   }
   const entryPath = toLocalPath(entryWindowsPath);
   if (!existsSync(packagePath) || !existsSync(entryPath)) {
-    throw new SkipError("Windows CLI 0.2.2-alpha.2 package or entry was not found");
+    throw new SkipError("Windows CLI 0.2.2-alpha.3 package or entry was not found");
   }
   const manifest = JSON.parse(readFileSync(packagePath, "utf8"));
   if (manifest.name !== "@deepseek-ai/dsh") {
@@ -505,12 +506,12 @@ export function resolvePluginTgz() {
       .map((entry) => join(root, entry.name));
   });
   if (candidates.length === 0) {
-    throw new SkipError("no dsh-plugin-bash-wsl-0.2.4 TGZ; set DSH_PLUGIN_TGZ to the built package");
+    throw new SkipError("no dsh-plugin-bash-wsl-0.2.5 TGZ; set DSH_PLUGIN_TGZ to the built package");
   }
   const newest = candidates
     .map((path) => ({ path, mtimeMs: statSync(path).mtimeMs }))
     .sort((left, right) => right.mtimeMs - left.mtimeMs)[0]?.path;
-  if (newest === undefined) throw new SkipError("no readable dsh-plugin-bash-wsl-0.2.4 TGZ");
+  if (newest === undefined) throw new SkipError("no readable dsh-plugin-bash-wsl-0.2.5 TGZ");
   return toWindowsPath(newest);
 }
 
@@ -565,10 +566,46 @@ function configureIsolatedPersistentTimeout(context, oneShotLimits = undefined) 
   };
 }
 
-function requireSuccessfulCli(result, description) {
+// alpha.3 moves package-manager output to per-operation files. Read only
+// bounded regular files inside this test-owned profile before cleanup.
+export function ownedPnpmDiagnostics(context) {
+  const owned = realpathSync(context.root);
+  assertOwnedPath(realpathSync(RUN_ROOT), owned);
+  const profile = realpathSync(profileDir(context));
+  assertOwnedPath(owned, profile);
+  const logs = join(profile, ".plugin-manager", "logs");
+  if (!existsSync(logs)) return "";
+  const logsRoot = realpathSync(logs);
+  assertOwnedPath(profile, logsRoot);
+  const parts = [];
+  for (const entry of readdirSync(logsRoot, { withFileTypes: true }).slice(-5)) {
+    if (!entry.isDirectory() || !entry.name.startsWith("operation-")) continue;
+    const path = join(logsRoot, entry.name, "pnpm.log");
+    if (!existsSync(path)) continue;
+    const actual = realpathSync(path);
+    assertOwnedPath(logsRoot, actual);
+    const info = statSync(actual);
+    if (!info.isFile() || info.size > MAX_CHILD_OUTPUT_BYTES) continue;
+    parts.push(sanitizeDiagnostic(readFileSync(actual, "utf8").slice(-8000))
+      .replace(/((?:_authToken|_auth|authorization|password|api[_-]?key)\s*[:=]\s*)[^\r\n]+/gi, "$1<redacted>"));
+  }
+  return parts.join("\n").slice(-16000);
+}
+
+export function requireSuccessfulCli(result, description, context) {
   const lifecycle = childLifecycleEvidence(result);
-  const diagnostic = sanitizeDiagnostic(result.error ?? result.stderr);
-  if (!lifecycle.ok) throw new Error(`${description}: child lifecycle was not clean: ${JSON.stringify(lifecycle)} ${diagnostic}`);
+  // pnpm writes errors to stdout too; retaining only wrapper stderr loses
+  // the actual installation failure when CLI mode inherits pnpm's streams.
+  let diagnostic = sanitizeDiagnostic([result.error, result.stderr, result.stdout].filter(Boolean).join("\n"));
+  if ((!lifecycle.ok || result.exitCode !== 0) && context !== undefined) {
+    try {
+      const log = ownedPnpmDiagnostics(context);
+      if (log) diagnostic += `\nOwned pnpm diagnostic:\n${log}`;
+    } catch (error) {
+      diagnostic += `\nOwned pnpm diagnostic unavailable: ${sanitizeDiagnostic(error)}`;
+    }
+  }
+  if (!lifecycle.ok) throw new Error(`${description}: CLI command did not succeed: ${JSON.stringify(lifecycle)} ${diagnostic}`);
   if (result.exitCode !== 0) {
     if (/(pnpm was not found|ERR_PNPM_NO_OFFLINE_META|ERR_PNPM_META_FETCH_FAIL|ERR_PNPM_FETCH|offline.*(?:metadata|package)|could not resolve.*offline)/i.test(diagnostic)) {
       throw new SkipError(`${description} capability is unavailable: offline package-manager dependency/cache is missing`);
@@ -628,7 +665,7 @@ export async function prepareIsolatedProfile(root, label = "cli", options = {}) 
     workspace: context.workspace,
     args: [...addArgs, pluginTgz],
   });
-  requireSuccessfulCli(pluginInstall, "isolated plugin install");
+  requireSuccessfulCli(pluginInstall, "isolated plugin install", context);
   context.persistentTimeout = configureIsolatedPersistentTimeout(
     context,
     options.oneShotLimits,
@@ -638,7 +675,7 @@ export async function prepareIsolatedProfile(root, label = "cli", options = {}) 
     workspace: context.workspace,
     args: [...addArgs, probePackage],
   });
-  requireSuccessfulCli(probeInstall, "isolated CLI probe install");
+  requireSuccessfulCli(probeInstall, "isolated CLI probe install", context);
   const sourceDist = join(PROJECT_ROOT, "dist");
   const installedDist = join(profileDir(context), "node_modules", "dsh-plugin-bash-wsl", "dist");
   if (!existsSync(sourceDist) || !existsSync(installedDist)) {
